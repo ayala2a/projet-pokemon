@@ -3,20 +3,22 @@ import logging
 import os
 import re
 from pathlib import Path
+from decimal import Decimal
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import psycopg
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 from pymongo.errors import PyMongoError
-from pokemon.dao import CollectionDAO, HistoriqueDAO, RechercheDAO
+from pokemon.dao import CatalogueDAO, CollectionDAO, HistoriqueDAO, RechercheDAO
 from pokemon.embeddings import ModeleAbsent, encoder, identite_modele
 from pokemon.textes import centrer_requete
 
-app = FastAPI(title='Pokécollection', description='Une collection de démonstration, sans compte.')
+app = FastAPI(title='Pokécollection', description='Catalogue et collection locale persistante, sans compte.')
 collection = CollectionDAO()
+catalogue = CatalogueDAO()
 historique = HistoriqueDAO()
 recherche = RechercheDAO()
 IMAGES = Path(os.getenv('POKEMON_IMAGE_DIR', '/travail/pokemon/images'))
@@ -37,20 +39,73 @@ def statistiques():
     return collection.statistiques()
 
 @app.get('/filtres')
-def filtres():
-    return collection.filtres()
+def filtres(bloc: str = ''):
+    return collection.filtres(bloc)
+
+@app.get('/catalogue/filtres')
+def filtres_catalogue(bloc: str = ''):
+    return catalogue.filtres(bloc)
+
+@app.get('/catalogue/perimetre')
+def perimetre():
+    return catalogue.perimetre()
+
+@app.get('/catalogue')
+def cartes_catalogue(nom: str = '', extension: str = '', type_carte: str = '', rarete: str = '', bloc: str = '',
+                     page: Annotated[int, Query(ge=1)] = 1,
+                     taille: Annotated[int, Query(ge=1, le=48)] = 12):
+    return catalogue.rechercher(nom, extension, type_carte, rarete, page, taille, bloc)
 
 @app.get('/collection')
-def cartes(nom: str = '', extension: str = '', type_carte: str = '', rarete: str = '',
+def cartes(nom: str = '', extension: str = '', type_carte: str = '', rarete: str = '', bloc: str = '',
            page: Annotated[int, Query(ge=1)] = 1,
            taille: Annotated[int, Query(ge=1, le=48)] = 12):
-    return collection.rechercher(nom, extension, type_carte, rarete, page, taille)
+    return collection.rechercher(nom, extension, type_carte, rarete, page, taille, bloc)
+
+class InformationsExemplaire(BaseModel):
+    etat: str | None = Field(default=None, max_length=40)
+    variante: str | None = Field(default=None, max_length=60)
+    prix_achat: Decimal | None = Field(default=None, ge=0, max_digits=10, decimal_places=2)
+
+class AjoutExemplaires(InformationsExemplaire):
+    references: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(min_length=1, max_length=200)
+    requete_id: UUID = Field(default_factory=uuid4)
+
+def informations_modele(modele):
+    donnees = modele.model_dump(exclude={'references', 'requete_id'}, exclude_unset=True)
+    if 'prix_achat' in donnees:
+        prix = donnees['prix_achat']
+        donnees['prix_centimes'] = int(prix * 100) if prix is not None else None
+        donnees['prix_achat'] = float(prix) if prix is not None else None
+    return donnees
+
+@app.post('/collection/exemplaires')
+def ajouter_exemplaires(ajout: AjoutExemplaires):
+    try:
+        return collection.ajouter(ajout.references, str(ajout.requete_id), informations_modele(ajout))
+    except ValueError as erreur:
+        raise HTTPException(404, str(erreur)) from erreur
+
+@app.delete('/collection/exemplaires/{identifiant}')
+def retirer_exemplaire(identifiant: str):
+    if not collection.retirer(identifiant):
+        raise HTTPException(404, 'Exemplaire introuvable.')
+    return {'retire': True}
+
+@app.patch('/collection/exemplaires/{identifiant}')
+def modifier_exemplaire(identifiant: str, informations: InformationsExemplaire):
+    donnees = informations_modele(informations)
+    if not donnees:
+        raise HTTPException(422, 'Aucune information à modifier.')
+    if not collection.modifier(identifiant, donnees):
+        raise HTTPException(404, 'Exemplaire introuvable.')
+    return {'modifie': True}
 
 @app.get('/cartes/{reference}')
 def fiche(reference: str):
     carte = collection.fiche(reference)
     if not carte:
-        raise HTTPException(404, 'Cette carte ne fait pas partie de la collection.')
+        raise HTTPException(404, 'Cette carte est absente du catalogue Pokémon local.')
     return carte
 
 class Consultation(BaseModel):
@@ -59,7 +114,7 @@ class Consultation(BaseModel):
 @app.post('/sessions/{session}/consultations')
 def consulter(session: UUID, consultation: Consultation):
     if not collection.fiche(consultation.carte_ref):
-        raise HTTPException(404, 'Carte absente de la collection.')
+        raise HTTPException(404, 'Carte absente du catalogue Pokémon local.')
     return {'historique_disponible': historique.enregistrer(str(session), consultation.carte_ref)}
 
 @app.get('/sessions/{session}/consultations')
@@ -73,6 +128,7 @@ class Requete(BaseModel):
 
 @app.post('/recherche')
 def recherche_semantique(requete: Requete):
+    from pokemon.pertinence import CalibrationAbsente
     texte = requete.texte.strip()
     if len(texte) < 2:
         raise HTTPException(422, 'Saisissez une phrase de recherche.')
@@ -82,7 +138,7 @@ def recherche_semantique(requete: Requete):
             return {'resultats': []}
         vecteur = encoder([centrer_requete(texte)], requete=True)[0]
         resultats = recherche.rechercher(vecteur, references, identite_modele())
-    except (psycopg.Error, ModeleAbsent, OSError, ImportError) as erreur:
+    except (psycopg.Error, ModeleAbsent, CalibrationAbsente, OSError, ImportError) as erreur:
         logging.warning('Recherche indisponible : %s', erreur)
         raise HTTPException(503, 'La recherche par sens est indisponible. Les filtres restent utilisables.') from erreur
     fiches = collection.fiches(x['carte_ref'] for x in resultats)
@@ -90,9 +146,12 @@ def recherche_semantique(requete: Requete):
 
 @app.get('/images/{identifiant}')
 def image(identifiant: str):
-    if not re.fullmatch(r'[A-Za-z0-9_-]+', identifiant):
+    if not re.fullmatch(r'(?:[A-Za-z0-9_!-]|%[0-9A-Fa-f]{2})+', identifiant):
         raise HTTPException(404)
     chemin = IMAGES / (identifiant + '.webp')
     if not chemin.is_file():
+        chemin = IMAGES / (identifiant + '.png')
+    if not chemin.is_file():
         raise HTTPException(404, 'Illustration non disponible localement.')
-    return FileResponse(chemin, media_type='image/webp', headers={'Cache-Control': 'public, max-age=86400'})
+    return FileResponse(chemin, media_type='image/png' if chemin.suffix == '.png' else 'image/webp',
+                        headers={'Cache-Control': 'public, max-age=86400'})

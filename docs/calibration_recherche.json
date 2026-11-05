@@ -1,0 +1,899 @@
+{
+  "modele": "Xenova/multilingual-e5-small@761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+  "seuil_distance": 0.12265604734420776,
+  "references": [
+    "fr:ex8-26",
+    "fr:base3-46",
+    "fr:base1-4",
+    "fr:base1-43",
+    "fr:base1-58",
+    "fr:base1-63"
+  ],
+  "methode": "F0.5 maximal sur calibration ; égalité départagée par le seuil le plus strict.",
+  "statistiques": {
+    "calibration": {
+      "vrais_positifs": 3,
+      "faux_positifs": 0,
+      "faux_negatifs": 4,
+      "precision": 1.0,
+      "rappel": 0.42857142857142855
+    },
+    "validation": {
+      "vrais_positifs": 2,
+      "faux_positifs": 0,
+      "faux_negatifs": 5,
+      "precision": 1.0,
+      "rappel": 0.2857142857142857
+    }
+  },
+  "mesures": {
+    "calibration": [
+      {
+        "question": "piocher des cartes",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.1792775147937984,
+        "pertinent": false
+      },
+      {
+        "question": "piocher des cartes",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.19167208671569824,
+        "pertinent": false
+      },
+      {
+        "question": "piocher des cartes",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.16611993312835693,
+        "pertinent": false
+      },
+      {
+        "question": "piocher des cartes",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.18429768085479736,
+        "pertinent": false
+      },
+      {
+        "question": "piocher des cartes",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.17909389734268188,
+        "pertinent": false
+      },
+      {
+        "question": "piocher des cartes",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.14580437975538874,
+        "pertinent": true
+      },
+      {
+        "question": "attaque qui empoisonne",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.16209495067596436,
+        "pertinent": false
+      },
+      {
+        "question": "attaque qui empoisonne",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.14879220724105835,
+        "pertinent": false
+      },
+      {
+        "question": "attaque qui empoisonne",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.16519641876220703,
+        "pertinent": false
+      },
+      {
+        "question": "attaque qui empoisonne",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.14593677842993713,
+        "pertinent": false
+      },
+      {
+        "question": "attaque qui empoisonne",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.14632061559917342,
+        "pertinent": true
+      },
+      {
+        "question": "attaque qui empoisonne",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.15942716598510742,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon qui provoque des incendies",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.11742806434631348,
+        "pertinent": true
+      },
+      {
+        "question": "un Pokémon qui provoque des incendies",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.17387819290161133,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon qui provoque des incendies",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.16127777099609375,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon qui provoque des incendies",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.1815880537033081,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon qui provoque des incendies",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.16360020637512207,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon qui provoque des incendies",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.168276846408844,
+        "pertinent": false
+      },
+      {
+        "question": "se téléporter pour échapper au danger",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.1897987481891732,
+        "pertinent": false
+      },
+      {
+        "question": "se téléporter pour échapper au danger",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.12192535400390625,
+        "pertinent": true
+      },
+      {
+        "question": "se téléporter pour échapper au danger",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.17556309700012207,
+        "pertinent": false
+      },
+      {
+        "question": "se téléporter pour échapper au danger",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.1794803631615408,
+        "pertinent": false
+      },
+      {
+        "question": "se téléporter pour échapper au danger",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.16347473859786987,
+        "pertinent": false
+      },
+      {
+        "question": "se téléporter pour échapper au danger",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.16275629886258502,
+        "pertinent": false
+      },
+      {
+        "question": "provoquer des orages",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.17324721813201904,
+        "pertinent": false
+      },
+      {
+        "question": "provoquer des orages",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.16994810104370117,
+        "pertinent": false
+      },
+      {
+        "question": "provoquer des orages",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.1319187879562378,
+        "pertinent": true
+      },
+      {
+        "question": "provoquer des orages",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.18395607567095162,
+        "pertinent": false
+      },
+      {
+        "question": "provoquer des orages",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.15463685989379883,
+        "pertinent": false
+      },
+      {
+        "question": "provoquer des orages",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.1819073910089546,
+        "pertinent": false
+      },
+      {
+        "question": "éviter les dégâts au prochain tour",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.18766218423843384,
+        "pertinent": false
+      },
+      {
+        "question": "éviter les dégâts au prochain tour",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.19276010990142822,
+        "pertinent": false
+      },
+      {
+        "question": "éviter les dégâts au prochain tour",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.16421985626220703,
+        "pertinent": false
+      },
+      {
+        "question": "éviter les dégâts au prochain tour",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.14709199351620483,
+        "pertinent": true
+      },
+      {
+        "question": "éviter les dégâts au prochain tour",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.18121037427217845,
+        "pertinent": false
+      },
+      {
+        "question": "éviter les dégâts au prochain tour",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.17268047251345098,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon de type eau",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.15288934567240875,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon de type eau",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.14445197582244873,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon de type eau",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.15627187490463257,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon de type eau",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.10609471797943115,
+        "pertinent": true
+      },
+      {
+        "question": "un Pokémon de type eau",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.12338674068450928,
+        "pertinent": false
+      },
+      {
+        "question": "un Pokémon de type eau",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.14082974195480347,
+        "pertinent": false
+      },
+      {
+        "question": "soigner les blessures de mon Pokémon",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.17624104022979736,
+        "pertinent": false
+      },
+      {
+        "question": "soigner les blessures de mon Pokémon",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.14734017848968506,
+        "pertinent": false
+      },
+      {
+        "question": "soigner les blessures de mon Pokémon",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.1528470516204834,
+        "pertinent": false
+      },
+      {
+        "question": "soigner les blessures de mon Pokémon",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.15336029807565665,
+        "pertinent": false
+      },
+      {
+        "question": "soigner les blessures de mon Pokémon",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.14673141082320806,
+        "pertinent": false
+      },
+      {
+        "question": "soigner les blessures de mon Pokémon",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.19661498069763184,
+        "pertinent": false
+      },
+      {
+        "question": "endormir le Pokémon adverse",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.16021806001663208,
+        "pertinent": false
+      },
+      {
+        "question": "endormir le Pokémon adverse",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.1401205062866211,
+        "pertinent": false
+      },
+      {
+        "question": "endormir le Pokémon adverse",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.16131174564361572,
+        "pertinent": false
+      },
+      {
+        "question": "endormir le Pokémon adverse",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.1521807818305011,
+        "pertinent": false
+      },
+      {
+        "question": "endormir le Pokémon adverse",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.14237782783442188,
+        "pertinent": false
+      },
+      {
+        "question": "endormir le Pokémon adverse",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.17803633213043213,
+        "pertinent": false
+      },
+      {
+        "question": "récupérer un Pokémon depuis la défausse",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.16992143302921714,
+        "pertinent": false
+      },
+      {
+        "question": "récupérer un Pokémon depuis la défausse",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.1417146921157837,
+        "pertinent": false
+      },
+      {
+        "question": "récupérer un Pokémon depuis la défausse",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.1529477834701538,
+        "pertinent": false
+      },
+      {
+        "question": "récupérer un Pokémon depuis la défausse",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.1371793069136541,
+        "pertinent": false
+      },
+      {
+        "question": "récupérer un Pokémon depuis la défausse",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.13161513601586594,
+        "pertinent": false
+      },
+      {
+        "question": "récupérer un Pokémon depuis la défausse",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.19019374818187162,
+        "pertinent": false
+      },
+      {
+        "question": "une recette de gâteau au chocolat",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.19665775289111553,
+        "pertinent": false
+      },
+      {
+        "question": "une recette de gâteau au chocolat",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.21101588010787964,
+        "pertinent": false
+      },
+      {
+        "question": "une recette de gâteau au chocolat",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.21041524410247803,
+        "pertinent": false
+      },
+      {
+        "question": "une recette de gâteau au chocolat",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.20701372623443604,
+        "pertinent": false
+      },
+      {
+        "question": "une recette de gâteau au chocolat",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.1858454942703247,
+        "pertinent": false
+      },
+      {
+        "question": "une recette de gâteau au chocolat",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.19998166561072028,
+        "pertinent": false
+      },
+      {
+        "question": "réserver un billet de train",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.20084241631157407,
+        "pertinent": false
+      },
+      {
+        "question": "réserver un billet de train",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.18688833713531494,
+        "pertinent": false
+      },
+      {
+        "question": "réserver un billet de train",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.19047677516937256,
+        "pertinent": false
+      },
+      {
+        "question": "réserver un billet de train",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.2034319043159485,
+        "pertinent": false
+      },
+      {
+        "question": "réserver un billet de train",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.19880247116088867,
+        "pertinent": false
+      },
+      {
+        "question": "réserver un billet de train",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.15169987534582208,
+        "pertinent": false
+      }
+    ],
+    "validation": [
+      {
+        "question": "mes cartes permettant de piocher",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.15110102746191667,
+        "pertinent": false
+      },
+      {
+        "question": "mes cartes permettant de piocher",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.16518831253051758,
+        "pertinent": false
+      },
+      {
+        "question": "mes cartes permettant de piocher",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.15083956718444824,
+        "pertinent": false
+      },
+      {
+        "question": "mes cartes permettant de piocher",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.15145039558410645,
+        "pertinent": false
+      },
+      {
+        "question": "mes cartes permettant de piocher",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.15695178508758545,
+        "pertinent": false
+      },
+      {
+        "question": "mes cartes permettant de piocher",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.15041909070071813,
+        "pertinent": true
+      },
+      {
+        "question": "rendre le défenseur empoisonné",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.17517483234405518,
+        "pertinent": false
+      },
+      {
+        "question": "rendre le défenseur empoisonné",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.1544601321220398,
+        "pertinent": false
+      },
+      {
+        "question": "rendre le défenseur empoisonné",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.19480645656585693,
+        "pertinent": false
+      },
+      {
+        "question": "rendre le défenseur empoisonné",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.15661161204507135,
+        "pertinent": false
+      },
+      {
+        "question": "rendre le défenseur empoisonné",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.13843378837209275,
+        "pertinent": true
+      },
+      {
+        "question": "rendre le défenseur empoisonné",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.19583600759506226,
+        "pertinent": false
+      },
+      {
+        "question": "fondre la roche avec un souffle brûlant",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.1162065863609314,
+        "pertinent": true
+      },
+      {
+        "question": "fondre la roche avec un souffle brûlant",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.18336093425750732,
+        "pertinent": false
+      },
+      {
+        "question": "fondre la roche avec un souffle brûlant",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.18222856521606445,
+        "pertinent": false
+      },
+      {
+        "question": "fondre la roche avec un souffle brûlant",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.19260637804231628,
+        "pertinent": false
+      },
+      {
+        "question": "fondre la roche avec un souffle brûlant",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.15487158298492432,
+        "pertinent": false
+      },
+      {
+        "question": "fondre la roche avec un souffle brûlant",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.1820816993713379,
+        "pertinent": false
+      },
+      {
+        "question": "sentir le danger grâce à la télépathie",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.1826465129852295,
+        "pertinent": false
+      },
+      {
+        "question": "sentir le danger grâce à la télépathie",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.11763405799865723,
+        "pertinent": true
+      },
+      {
+        "question": "sentir le danger grâce à la télépathie",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.1916225552558899,
+        "pertinent": false
+      },
+      {
+        "question": "sentir le danger grâce à la télépathie",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.18926269944087715,
+        "pertinent": false
+      },
+      {
+        "question": "sentir le danger grâce à la télépathie",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.1890200134819746,
+        "pertinent": false
+      },
+      {
+        "question": "sentir le danger grâce à la télépathie",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.1913532018661499,
+        "pertinent": false
+      },
+      {
+        "question": "des Pokémon réunis déclenchent un orage",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.18402689695358276,
+        "pertinent": false
+      },
+      {
+        "question": "des Pokémon réunis déclenchent un orage",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.1776285171508789,
+        "pertinent": false
+      },
+      {
+        "question": "des Pokémon réunis déclenchent un orage",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.15472346544265747,
+        "pertinent": true
+      },
+      {
+        "question": "des Pokémon réunis déclenchent un orage",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.18192963707866305,
+        "pertinent": false
+      },
+      {
+        "question": "des Pokémon réunis déclenchent un orage",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.16696161031723022,
+        "pertinent": false
+      },
+      {
+        "question": "des Pokémon réunis déclenchent un orage",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.17258179187774658,
+        "pertinent": false
+      },
+      {
+        "question": "prévenir tous les dégâts infligés",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.18618065118789673,
+        "pertinent": false
+      },
+      {
+        "question": "prévenir tous les dégâts infligés",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.1917818784713745,
+        "pertinent": false
+      },
+      {
+        "question": "prévenir tous les dégâts infligés",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.15995311737060547,
+        "pertinent": false
+      },
+      {
+        "question": "prévenir tous les dégâts infligés",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.16183740865214968,
+        "pertinent": true
+      },
+      {
+        "question": "prévenir tous les dégâts infligés",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.17569867300089181,
+        "pertinent": false
+      },
+      {
+        "question": "prévenir tous les dégâts infligés",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.16452133655548096,
+        "pertinent": false
+      },
+      {
+        "question": "je cherche un Pokémon aquatique",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.1796769851349882,
+        "pertinent": false
+      },
+      {
+        "question": "je cherche un Pokémon aquatique",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.18244677782058716,
+        "pertinent": false
+      },
+      {
+        "question": "je cherche un Pokémon aquatique",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.1667536497116089,
+        "pertinent": false
+      },
+      {
+        "question": "je cherche un Pokémon aquatique",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.14093035459518433,
+        "pertinent": true
+      },
+      {
+        "question": "je cherche un Pokémon aquatique",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.16325974464416504,
+        "pertinent": false
+      },
+      {
+        "question": "je cherche un Pokémon aquatique",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.16743707656860352,
+        "pertinent": false
+      },
+      {
+        "question": "restaurer les points de vie de mes alliés",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.19498146742471856,
+        "pertinent": false
+      },
+      {
+        "question": "restaurer les points de vie de mes alliés",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.19866493936374563,
+        "pertinent": false
+      },
+      {
+        "question": "restaurer les points de vie de mes alliés",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.20347503434047165,
+        "pertinent": false
+      },
+      {
+        "question": "restaurer les points de vie de mes alliés",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.19784841531063324,
+        "pertinent": false
+      },
+      {
+        "question": "restaurer les points de vie de mes alliés",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.1930600519812138,
+        "pertinent": false
+      },
+      {
+        "question": "restaurer les points de vie de mes alliés",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.18949319061596337,
+        "pertinent": false
+      },
+      {
+        "question": "plonger mon adversaire dans le sommeil",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.18254787817882623,
+        "pertinent": false
+      },
+      {
+        "question": "plonger mon adversaire dans le sommeil",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.1668243507638172,
+        "pertinent": false
+      },
+      {
+        "question": "plonger mon adversaire dans le sommeil",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.17959804413306835,
+        "pertinent": false
+      },
+      {
+        "question": "plonger mon adversaire dans le sommeil",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.17504662275313743,
+        "pertinent": false
+      },
+      {
+        "question": "plonger mon adversaire dans le sommeil",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.16313724188243484,
+        "pertinent": false
+      },
+      {
+        "question": "plonger mon adversaire dans le sommeil",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.17795328896820117,
+        "pertinent": false
+      },
+      {
+        "question": "ressusciter une créature défaussée",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.17045489461585528,
+        "pertinent": false
+      },
+      {
+        "question": "ressusciter une créature défaussée",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.18008953332901,
+        "pertinent": false
+      },
+      {
+        "question": "ressusciter une créature défaussée",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.17854183912277222,
+        "pertinent": false
+      },
+      {
+        "question": "ressusciter une créature défaussée",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.17202436923980713,
+        "pertinent": false
+      },
+      {
+        "question": "ressusciter une créature défaussée",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.16826740408740615,
+        "pertinent": false
+      },
+      {
+        "question": "ressusciter une créature défaussée",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.20009229183472033,
+        "pertinent": false
+      },
+      {
+        "question": "comment préparer des pâtes carbonara",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.200949466256781,
+        "pertinent": false
+      },
+      {
+        "question": "comment préparer des pâtes carbonara",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.2314477929904396,
+        "pertinent": false
+      },
+      {
+        "question": "comment préparer des pâtes carbonara",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.22002223789758169,
+        "pertinent": false
+      },
+      {
+        "question": "comment préparer des pâtes carbonara",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.18459580998979264,
+        "pertinent": false
+      },
+      {
+        "question": "comment préparer des pâtes carbonara",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.20396897804644598,
+        "pertinent": false
+      },
+      {
+        "question": "comment préparer des pâtes carbonara",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.2324096699005168,
+        "pertinent": false
+      },
+      {
+        "question": "la météo de demain à Paris",
+        "carte_ref": "fr:base1-4",
+        "distance": 0.1923745033852604,
+        "pertinent": false
+      },
+      {
+        "question": "la météo de demain à Paris",
+        "carte_ref": "fr:base1-43",
+        "distance": 0.19233793020248413,
+        "pertinent": false
+      },
+      {
+        "question": "la météo de demain à Paris",
+        "carte_ref": "fr:base1-58",
+        "distance": 0.19581031799316406,
+        "pertinent": false
+      },
+      {
+        "question": "la météo de demain à Paris",
+        "carte_ref": "fr:base1-63",
+        "distance": 0.19470494985580444,
+        "pertinent": false
+      },
+      {
+        "question": "la météo de demain à Paris",
+        "carte_ref": "fr:base3-46",
+        "distance": 0.20741019271046457,
+        "pertinent": false
+      },
+      {
+        "question": "la météo de demain à Paris",
+        "carte_ref": "fr:ex8-26",
+        "distance": 0.18617281872549074,
+        "pertinent": false
+      }
+    ]
+  }
+}

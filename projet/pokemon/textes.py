@@ -1,5 +1,6 @@
 """Normalisation partagée par l'import et les tests, sans accès aux bases."""
 import re
+from urllib.parse import unquote
 
 
 def nettoyer(valeur):
@@ -37,8 +38,10 @@ def normaliser(carte):
     extension = carte.get('set') or {}
     return {
         '_id': 'fr:' + carte['id'], 'id': carte['id'], 'nom': carte['name'],
-        'numero': str(carte.get('localId', '')), 'categorie': carte.get('category', ''),
+        'numero': unquote(str(carte.get('localId', ''))), 'categorie': carte.get('category', ''),
         'extension_id': extension.get('id', ''), 'extension': extension.get('name', 'Inconnue'),
+        'bloc_id': (extension.get('serie') or {}).get('id', 'inconnu'),
+        'bloc': (extension.get('serie') or {}).get('name', 'Non renseigné'),
         'rarete': carte.get('rarity') or 'Non renseignée', 'types': carte.get('types') or [],
         'description': nettoyer(carte.get('description')), 'pv': carte.get('hp'),
         'attaques': carte.get('attacks') or [], 'capacites': carte.get('abilities') or [],
@@ -47,3 +50,19 @@ def normaliser(carte):
                                                 ('reverse', 'Reverse')]
                       if (carte.get('variants') or {}).get(champ)] or ['Normale'],
     }
+
+
+def passages_recherche(carte):
+    """Éviter qu'un effet court soit noyé dans toute la fiche de la carte."""
+    if not carte.get('texte'):
+        return []
+    nom = carte['nom']
+    passages = [nom + '. Types : ' + ', '.join(carte.get('types') or [])]
+    if nettoyer(carte.get('description')):
+        passages.append(nom + '. ' + nettoyer(carte['description']))
+    for famille in ['capacites', 'attaques']:
+        for element in carte.get(famille) or []:
+            effet = nettoyer(element.get('effect'))
+            if effet:
+                passages.append(nom + '. ' + nettoyer(element.get('name')) + ' : ' + effet)
+    return list(dict.fromkeys(passages))

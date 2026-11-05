@@ -1,13 +1,15 @@
 # Pokécollection
 
-Application locale pour explorer une collection de cartes Pokémon en français, sans création de compte. Les données proviennent de TCGdex ; les exemplaires possédés et les achats sont simulés.
+Application locale pour explorer le catalogue Pokémon français et constituer une collection persistante, sans création de compte. Les données proviennent de TCGdex ; la collection commence vide et se remplit uniquement avec vos ajouts.
 
 ## Fonctionnalités
 
-- Collection illustrée, fiches et filtres par nom, extension, type et rareté.
-- Recherche en langage naturel : cinq cartes classées par distance cosinus.
+- Catalogue illustré avec pagination et filtres par bloc, extension, nom, type et rareté.
+- Sélection de cartes et ajout à la collection en un clic, plusieurs exemplaires possibles.
+- Retrait d’un exemplaire et informations facultatives : état, variante, prix d’achat.
+- Recherche en langage naturel : jusqu’à cinq cartes possédées, retenues sous un seuil de distance cosinus calibré, sans compléter les résultats éloignés. [Méthode et limites](docs/RECHERCHE.md).
 - Dix dernières consultations par session anonyme, expiration après trente minutes d’inactivité.
-- Nombre d’exemplaires, cartes distinctes, dépenses simulées et répartition par extension ou rareté.
+- Nombre d’exemplaires, cartes distinctes, achats renseignés et répartition par extension ou rareté.
 - Consultation de la collection possible même si Redis ou la recherche sémantique sont indisponibles.
 
 ## Démarrer après clonage
@@ -26,7 +28,31 @@ Attendre la fin de l’import, puis ouvrir :
 - **Tableau de bord : http://localhost:8501**
 - Documentation de l’API : http://localhost:8000/docs
 
-La démo par défaut prépare les extensions Set de Base, Jungle et Fossile, avec 360 exemplaires simulés. Lors de la préparation du 5 novembre 2026 : 228 fiches importées, dont 189 cartes Pokémon distinctes dans la collection ; deux illustrations absentes de la source. Les volumes peuvent évoluer chez TCGdex.
+L’import par défaut prépare les extensions Set de Base, Jungle et Fossile du bloc Base. Le périmètre local est affiché dans le catalogue (189 cartes Pokémon lors de la préparation initiale ; deux illustrations absentes de la source). Sélectionnez vos cartes pour constituer la collection. Les imports ne génèrent aucun exemplaire et préservent tous vos ajouts existants.
+
+Importer un autre bloc ou toutes les extensions d’un bloc, avant la démonstration :
+
+```powershell
+# Début d’un bloc, au maximum 240 fiches
+docker exec python python /projet/importer.py --blocs base --limite 240
+
+# Tout le bloc, sans limite ; téléchargement plus long
+docker exec python python /projet/importer.py --blocs base --limite 0
+```
+
+Les imports sont cumulatifs : ils enrichissent le catalogue et son index sémantique, sans supprimer les exemplaires, les autres extensions ou les vecteurs déjà préparés. Aucun calcul d’embedding n’est lancé lorsqu’une carte est ajoutée à la collection.
+
+Le catalogue enrichi contient **3 174 cartes Pokémon françaises** : **EX (`ex`), Diamant & Perle (`dp`), Platine (`pl`) et HeartGold SoulSilver (`hgss`)**, ainsi que Base conservé et complété avec les extensions françaises disponibles. Pour reproduire ce périmètre après l’import initial :
+
+```powershell
+docker exec python python /projet/importer.py --blocs base,ex,dp,pl,hgss --limite 0
+```
+
+Cette commande retient des extensions entières. Une relance reprend les fiches/images du cache et ne calcule un embedding que si le texte normalisé ou la révision du modèle a changé, ou si le vecteur manque. Chaque lot de vecteurs est sauvegardé pour permettre une reprise après interruption. Le bilan JSON détaillé se trouve dans `travail/pokemon/bilan_import.json`, avec le périmètre cumulé, les images manquantes et les cartes réellement indexées par bloc.
+
+Le [bilan du catalogue enrichi](docs/CATALOGUE.md) détaille les extensions retenues et les 3 064 cartes disponibles pour la recherche sémantique. Les 3 174 cartes disposent d’une image locale : 2 428 scans français et 746 scans anglais de secours, clairement signalés dans l’interface.
+
+La recherche compare séparément le nom, la description et chaque effet d’attaque/capacité. Elle affiche le passage le plus proche pour expliquer chaque résultat ; un effet court comme « Piochez une carte » n’est plus noyé dans toute la fiche. La recherche reste limitée aux cartes possédées.
 
 Les données, images et modèles ne sont pas inclus dans Git. Ils sont téléchargés dans `travail/pokemon/`, et les bases persistent dans des volumes Docker. Après la première préparation, la collection et la recherche fonctionnent sans accès à TCGdex ni Hugging Face. Pour reconstruire les données depuis le cache :
 
@@ -85,11 +111,15 @@ Le [guide détaillé](projet/LISEZMOI.md) décrit l’import, les DAO, les choix
 
 - `projet/pokemon/` : connexions, DAO, normalisation et embeddings.
 - `projet/api.py` et `projet/tableau_de_bord.py` : API et interface.
-- `projet/importer.py` : préparation relançable et génération des exemplaires.
+- `projet/importer.py` : préparation relançable du catalogue, des images et des embeddings, sans modifier les exemplaires.
 - `python/`, `config/` et les fichiers Compose : environnement Docker.
 - `travail/j1`, `travail/j2`, `travail/j4` et `projet/nyc_eats/` : sources pédagogiques originales, conservées comme référence. Les jeux de données restaurants restent locaux et ne sont pas nécessaires à l’application Pokémon.
 
-La recherche porte sur les textes disponibles, pas sur les illustrations. Les achats simulés ne représentent pas une valeur marchande. Une nouvelle session de navigateur peut démarrer un nouvel historique. L’import n’est pas une transaction distribuée : le réaliser avant la démonstration.
+La recherche porte sur les textes disponibles, pas sur les illustrations. Les prix d’achat facultatifs ne représentent pas une estimation de valeur marchande. Une nouvelle session de navigateur peut démarrer un nouvel historique. L’import n’est pas une transaction distribuée : le réaliser avant la démonstration.
+
+Une collection vide affiche zéro exemplaire, zéro carte distincte et zéro achat renseigné. Les graphiques présentent un état vide et la recherche invite à ajouter des cartes ; le catalogue reste entièrement accessible. Aucun nettoyage de la collection ou de Redis n’est exécuté au démarrage ou à l’import.
+
+La collection est partagée sur cette installation et persiste dans MongoDB ; seule la liste Redis des consultations dépend de la session. Pour la démonstration : **catalogue → filtre bloc/extension → sélection → ajout → Ma collection et statistiques → recherche par sens → historique**.
 
 ## Sources
 

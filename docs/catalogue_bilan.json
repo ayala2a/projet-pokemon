@@ -1,0 +1,343 @@
+{
+  "source": "https://api.tcgdex.net/v2/fr",
+  "importe_le": "2026-11-05T18:14:02.690720+00:00",
+  "resumes_fr": 22201,
+  "extensions_fr": 202,
+  "fiches_importees": 3679,
+  "pokemon": 3174,
+  "textes_utiles": 3064,
+  "images_locales": 3584,
+  "blocs_importes": [
+    "Base",
+    "Diamant & Perle",
+    "EX",
+    "HeartGold SoulSilver",
+    "Platine"
+  ],
+  "extensions_demandees": [
+    "base1",
+    "base2",
+    "base3",
+    "base5",
+    "basep",
+    "dp1",
+    "dp2",
+    "dp3",
+    "dp4",
+    "dp5",
+    "dp6",
+    "dp7",
+    "dpp",
+    "ex1",
+    "ex10",
+    "ex11",
+    "ex12",
+    "ex13",
+    "ex14",
+    "ex15",
+    "ex16",
+    "ex2",
+    "ex3",
+    "ex4",
+    "ex5",
+    "ex6",
+    "ex8",
+    "ex9",
+    "exu",
+    "hgss1",
+    "hgss2",
+    "hgss3",
+    "hgss4",
+    "hgssp",
+    "pl1",
+    "pl2",
+    "pl3",
+    "wp"
+  ],
+  "extensions_sans_fiche_francaise": [
+    "wp"
+  ],
+  "extensions_importees": [
+    "base1",
+    "base2",
+    "base3",
+    "base5",
+    "basep",
+    "dp1",
+    "dp2",
+    "dp3",
+    "dp4",
+    "dp5",
+    "dp6",
+    "dp7",
+    "dpp",
+    "ex1",
+    "ex10",
+    "ex11",
+    "ex12",
+    "ex13",
+    "ex14",
+    "ex15",
+    "ex16",
+    "ex2",
+    "ex3",
+    "ex4",
+    "ex5",
+    "ex6",
+    "ex8",
+    "ex9",
+    "exu",
+    "hgss1",
+    "hgss2",
+    "hgss3",
+    "hgss4",
+    "hgssp",
+    "pl1",
+    "pl2",
+    "pl3"
+  ],
+  "exemplaires": 6,
+  "cartes_possedees": 6,
+  "index_semantique": true,
+  "vecteurs_reutilises": 3064,
+  "vecteurs_calcules": 0,
+  "catalogue_cumule": {
+    "blocs": {
+      "base": {
+        "nom": "Base",
+        "cartes": 283,
+        "images_manquantes": 0,
+        "textes_exploitables": 283,
+        "cartes_indexees": 283
+      },
+      "dp": {
+        "nom": "Diamant & Perle",
+        "cartes": 784,
+        "images_manquantes": 0,
+        "textes_exploitables": 776,
+        "cartes_indexees": 776
+      },
+      "ex": {
+        "nom": "EX",
+        "cartes": 1361,
+        "images_manquantes": 0,
+        "textes_exploitables": 1301,
+        "cartes_indexees": 1301
+      },
+      "hgss": {
+        "nom": "HeartGold SoulSilver",
+        "cartes": 381,
+        "images_manquantes": 0,
+        "textes_exploitables": 352,
+        "cartes_indexees": 352
+      },
+      "pl": {
+        "nom": "Platine",
+        "cartes": 365,
+        "images_manquantes": 0,
+        "textes_exploitables": 352,
+        "cartes_indexees": 352
+      }
+    },
+    "extensions": {
+      "base1": {
+        "nom": "Set de Base",
+        "bloc": "Base",
+        "cartes": 69
+      },
+      "base2": {
+        "nom": "Jungle",
+        "bloc": "Base",
+        "cartes": 63
+      },
+      "base3": {
+        "nom": "Fossile",
+        "bloc": "Base",
+        "cartes": 57
+      },
+      "base5": {
+        "nom": "Team Rocket",
+        "bloc": "Base",
+        "cartes": 68
+      },
+      "basep": {
+        "nom": "Wizards Black Star Promos",
+        "bloc": "Base",
+        "cartes": 26
+      },
+      "dp1": {
+        "nom": "Diamant & Perle",
+        "bloc": "Diamant & Perle",
+        "cartes": 107
+      },
+      "dp2": {
+        "nom": "Trésors Mystérieux",
+        "bloc": "Diamant & Perle",
+        "cartes": 111
+      },
+      "dp3": {
+        "nom": "Merveilles Secrètes",
+        "bloc": "Diamant & Perle",
+        "cartes": 120
+      },
+      "dp4": {
+        "nom": "Duels au Sommets",
+        "bloc": "Diamant & Perle",
+        "cartes": 100
+      },
+      "dp5": {
+        "nom": "Aube Majestueuse",
+        "bloc": "Diamant & Perle",
+        "cartes": 82
+      },
+      "dp6": {
+        "nom": "Éveil des Légendes",
+        "bloc": "Diamant & Perle",
+        "cartes": 135
+      },
+      "dp7": {
+        "nom": "Tempête",
+        "bloc": "Diamant & Perle",
+        "cartes": 92
+      },
+      "dpp": {
+        "nom": "Promo DP",
+        "bloc": "Diamant & Perle",
+        "cartes": 37
+      },
+      "ex1": {
+        "nom": "EX Rubis & Saphir",
+        "bloc": "EX",
+        "cartes": 87
+      },
+      "ex10": {
+        "nom": "EX Forces Cachées",
+        "bloc": "EX",
+        "cartes": 96
+      },
+      "ex11": {
+        "nom": "EX Espèces Delta",
+        "bloc": "EX",
+        "cartes": 95
+      },
+      "ex12": {
+        "nom": "EX Créateurs de légendes",
+        "bloc": "EX",
+        "cartes": 82
+      },
+      "ex13": {
+        "nom": "EX Fantômes Holon",
+        "bloc": "EX",
+        "cartes": 91
+      },
+      "ex14": {
+        "nom": "EX Gardiens de Cristal",
+        "bloc": "EX",
+        "cartes": 82
+      },
+      "ex15": {
+        "nom": "EX Île des Dragons",
+        "bloc": "EX",
+        "cartes": 83
+      },
+      "ex16": {
+        "nom": "EX Gardiens du Pouvoir",
+        "bloc": "EX",
+        "cartes": 81
+      },
+      "ex2": {
+        "nom": "EX Tempête de sable",
+        "bloc": "EX",
+        "cartes": 92
+      },
+      "ex3": {
+        "nom": "EX Dragon",
+        "bloc": "EX",
+        "cartes": 93
+      },
+      "ex4": {
+        "nom": "EX Team Magma vs Team Aqua",
+        "bloc": "EX",
+        "cartes": 77
+      },
+      "ex5": {
+        "nom": "EX Légendes Oubliées",
+        "bloc": "EX",
+        "cartes": 93
+      },
+      "ex6": {
+        "nom": "EX Rouge Feu & Vert Feuille",
+        "bloc": "EX",
+        "cartes": 99
+      },
+      "ex8": {
+        "nom": "EX Deoxys",
+        "bloc": "EX",
+        "cartes": 96
+      },
+      "ex9": {
+        "nom": "EX Émeraude",
+        "bloc": "EX",
+        "cartes": 86
+      },
+      "exu": {
+        "nom": "EX Forces Cachées Collection Zarbi",
+        "bloc": "EX",
+        "cartes": 28
+      },
+      "hgss1": {
+        "nom": "HeartGold SoulSilver",
+        "bloc": "HeartGold SoulSilver",
+        "cartes": 99
+      },
+      "hgss2": {
+        "nom": "Déchaînement",
+        "bloc": "HeartGold SoulSilver",
+        "cartes": 82
+      },
+      "hgss3": {
+        "nom": "Indomptable",
+        "bloc": "HeartGold SoulSilver",
+        "cartes": 80
+      },
+      "hgss4": {
+        "nom": "Triomphant",
+        "bloc": "HeartGold SoulSilver",
+        "cartes": 96
+      },
+      "hgssp": {
+        "nom": "Promo HGSS",
+        "bloc": "HeartGold SoulSilver",
+        "cartes": 24
+      },
+      "pl1": {
+        "nom": "Platine",
+        "bloc": "Platine",
+        "cartes": 115
+      },
+      "pl2": {
+        "nom": "Rivaux Émergeants",
+        "bloc": "Platine",
+        "cartes": 104
+      },
+      "pl3": {
+        "nom": "Vainqueurs Suprêmes",
+        "bloc": "Platine",
+        "cartes": 146
+      }
+    },
+    "images_manquantes": [],
+    "cartes_pokemon": 3174,
+    "cartes_indexees": 3064
+  },
+  "verifie_le": "2026-11-05T19:35:24.915540+00:00",
+  "images_langues": {
+    "fr": 2428,
+    "en": 746
+  },
+  "passages_semantiques": {
+    "passages": 9012,
+    "cartes": 3064
+  },
+  "images_pokemon_locales": 3174
+}
