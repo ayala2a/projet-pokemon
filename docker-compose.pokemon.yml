@@ -1,0 +1,9 @@
+services:
+  python:
+    mem_limit: 1536m
+    environment:
+      POKEMON_DATABASE: pokemon
+      POKEMON_DATA_DIR: /travail/pokemon
+      POKEMON_MODEL_DIR: /travail/pokemon/modele-e5
+      POKEMON_IMAGE_DIR: /travail/pokemon/images
+    command: ["python", "/projet/lancer.py"]

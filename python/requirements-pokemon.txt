@@ -1,0 +1,3 @@
+# Inférence CPU légère, sans PyTorch.
+onnxruntime==1.23.2
+tokenizers==0.22.1

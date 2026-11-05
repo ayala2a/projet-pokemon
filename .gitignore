@@ -1,0 +1,34 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Fiches, illustrations, modèles et journaux téléchargés/générés localement.
+travail/pokemon/
+*.log
+
+# Jeux de données restaurants du kit original (inutiles à Pokécollection).
+# Ils restent présents sur les postes existants ; l'import Pokémon est autonome.
+/donnees/
+
+# Configuration personnelle et secrets. Seuls les exemples sont versionnables.
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+*.pem
+*.key
+.codex/
+.agents/
+.aws/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
