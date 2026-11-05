@@ -4,7 +4,7 @@ Un catalogue Pokémon local et une collection persistante à constituer, sans co
 
 ## Démarrage
 
-Depuis la racine `nyc-eats`, avec Docker Desktop démarré :
+Depuis la racine du dépôt cloné, `projet-pokemon`, avec Docker Desktop démarré :
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.pokemon.yml --profile tous up -d --build

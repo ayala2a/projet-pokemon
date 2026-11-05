@@ -2,6 +2,8 @@
 
 Application locale pour explorer le catalogue Pokémon français et constituer une collection persistante, sans création de compte. Les données proviennent de TCGdex ; la collection commence vide et se remplit uniquement avec vos ajouts.
 
+Dépôt du projet : [ayala2a/projet-pokemon](https://github.com/ayala2a/projet-pokemon).
+
 ## Fonctionnalités
 
 - Catalogue illustré avec pagination et filtres par bloc, extension, nom, type et rareté.
@@ -29,8 +31,8 @@ Le mode développeur observe les parcours existants sans modifier leurs résulta
 Prérequis : Git et Docker Desktop avec Docker Compose, en mode conteneurs Linux. Les ports 8000 et 8501 doivent être disponibles. Aucune installation locale de Python ni clé API n’est nécessaire. La première préparation nécessite une connexion Internet et suffisamment de mémoire pour la stack Docker (prévoir environ 5 Go disponibles).
 
 ```powershell
-git clone https://github.com/DorianArg/pkmn_app.git
-cd pkmn_app
+git clone https://github.com/ayala2a/projet-pokemon.git
+cd projet-pokemon
 docker compose -f docker-compose.yml -f docker-compose.pokemon.yml --profile tous up -d --build
 docker exec python python /projet/importer.py
 ```
@@ -40,7 +42,7 @@ Attendre la fin de l’import, puis ouvrir :
 - **Tableau de bord : http://localhost:8501**
 - Documentation de l’API : http://localhost:8000/docs
 
-L’import par défaut prépare les extensions Set de Base, Jungle et Fossile du bloc Base. Le périmètre local est affiché dans le catalogue (189 cartes Pokémon lors de la préparation initiale ; deux illustrations absentes de la source). Sélectionnez vos cartes pour constituer la collection. Les imports ne génèrent aucun exemplaire et préservent tous vos ajouts existants.
+L’import par défaut prépare un premier lot des extensions Set de Base, Jungle et Fossile du bloc Base, limité à 240 fiches. Le périmètre réellement disponible est affiché dans le catalogue, sous « Extensions disponibles ». Sélectionnez vos cartes pour constituer la collection. Les imports ne génèrent aucun exemplaire et préservent tous vos ajouts existants.
 
 Importer un autre bloc ou toutes les extensions d’un bloc, avant la démonstration :
 
@@ -62,14 +64,14 @@ docker exec python python /projet/importer.py --blocs base,ex,dp,pl,hgss --limit
 
 Cette commande retient des extensions entières. Une relance reprend les fiches/images du cache et ne calcule un embedding que si le texte normalisé ou la révision du modèle a changé, ou si le vecteur manque. Chaque lot de vecteurs est sauvegardé pour permettre une reprise après interruption. Le bilan JSON détaillé se trouve dans `travail/pokemon/bilan_import.json`, avec le périmètre cumulé, les images manquantes et les cartes réellement indexées par bloc.
 
-Le [bilan du catalogue enrichi](docs/CATALOGUE.md) détaille les extensions retenues et les 3 064 cartes disponibles pour la recherche sémantique. Les 3 174 cartes disposent d’une image locale : 2 428 scans français et 746 scans anglais de secours, clairement signalés dans l’interface.
+Le [bilan du catalogue enrichi](docs/CATALOGUE.md) détaille les extensions retenues et les 3 064 cartes disponibles pour la recherche sémantique. Lors de ce bilan, les 3 174 cartes disposent d’une image locale : 2 428 scans français et 746 scans anglais de secours. Le détail par extension est consultable dans le catalogue ; les textes des fiches restent en français.
 
 La recherche compare séparément le nom, la description et chaque effet d’attaque/capacité. Elle affiche le passage le plus proche pour expliquer chaque résultat ; un effet court comme « Piochez une carte » n’est plus noyé dans toute la fiche. La recherche reste limitée aux cartes possédées.
 
 Les données, images et modèles ne sont pas inclus dans Git. Ils sont téléchargés dans `travail/pokemon/`, et les bases persistent dans des volumes Docker. Après la première préparation, la collection et la recherche fonctionnent sans accès à TCGdex ni Hugging Face. Pour reconstruire les données depuis le cache :
 
 ```powershell
-docker exec python python /projet/importer.py --hors-ligne
+docker exec python python /projet/importer.py --blocs base,ex,dp,pl,hgss --limite 0 --hors-ligne
 ```
 
 ## Architecture
@@ -120,6 +122,23 @@ Le workflow GitHub Actions vérifie la syntaxe et les tests unitaires. Les tests
 ## Organisation et limites
 
 Le [guide détaillé](projet/LISEZMOI.md) décrit l’import, les DAO, les choix CAP, la dégradation des services et le parcours de démonstration.
+
+```text
+projet-pokemon/
+├── projet/
+│   ├── api.py                  # API FastAPI
+│   ├── tableau_de_bord.py      # Interface Streamlit
+│   ├── lancer.py               # Lancement des deux services
+│   ├── importer.py             # Import du catalogue et préparation locale
+│   ├── pokemon/                # DAO, connexions, embeddings et traces
+│   └── tests/                  # Tests existants
+├── python/                     # Image Docker et dépendances Python
+├── config/                     # Initialisation du replica set MongoDB
+├── docs/                       # Bilans et calibration de la recherche
+├── travail/pokemon/            # Cache, images et modèle locaux, hors Git
+├── docker-compose.yml
+└── docker-compose.pokemon.yml
+```
 
 - `projet/pokemon/` : connexions, DAO, normalisation et embeddings.
 - `projet/api.py` et `projet/tableau_de_bord.py` : API et interface.
