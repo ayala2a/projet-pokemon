@@ -98,7 +98,7 @@ class IntegrationTest(unittest.TestCase):
         b = self.client.get('/collection?page=2').json()['cartes']
         self.assertFalse({c['_id'] for c in a} & {c['_id'] for c in b})
 
-    def test_historique_taille_doublons_isolation_expiration(self):
+    def test_historique_cartes_uniques_recence_isolation_expiration(self):
         session = str(uuid4())
         autre = str(uuid4())
         dao = self.api.historique
@@ -108,11 +108,21 @@ class IntegrationTest(unittest.TestCase):
                 reponse = self.client.post(f'/sessions/{session}/consultations', json={'carte_ref': 'fr:base1-4'})
                 self.assertTrue(reponse.json()['historique_disponible'])
             cartes = self.client.get(f'/sessions/{session}/consultations').json()['cartes']
-            self.assertEqual(len(cartes), 10)
-            self.assertTrue(all(c['_id'] == 'fr:base1-4' for c in cartes))
+            self.assertEqual([c['_id'] for c in cartes], ['fr:base1-4'])
+            references = ['fr:temoin-' + str(i) for i in range(12)]
+            for reference in references:
+                dao.enregistrer(session, reference)
+            attendus = list(reversed(references))[:10]
+            self.assertEqual(dao.lire(session)[0], attendus)
+            dao.enregistrer(session, attendus[4])
+            self.assertEqual(dao.lire(session)[0], [attendus[4]] + attendus[:4] + attendus[5:])
             self.assertEqual(dao.lire(autre)[0], [])
             self.assertGreater(dao.redis.ttl(cle), 1790)
             dao.redis.expire(cle, 30)
+            # Anciennes sessions : ne pas afficher les doublons déjà enregistrés.
+            dao.redis.lpush(cle, attendus[4], attendus[4])
+            self.assertEqual(dao.lire(session)[0].count(attendus[4]), 1)
+            self.assertLessEqual(dao.redis.ttl(cle), 30)
             dao.enregistrer(session, 'fr:base1-4')
             self.assertGreater(dao.redis.ttl(cle), 1790)
             court = HistoriqueDAO(dao.redis, expiration=1)

@@ -8,13 +8,14 @@ from typing import Annotated
 from uuid import UUID, uuid4
 
 import psycopg
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 from pymongo.errors import PyMongoError
 from pokemon.dao import CatalogueDAO, CollectionDAO, HistoriqueDAO, RechercheDAO
 from pokemon.embeddings import ModeleAbsent, encoder, identite_modele
 from pokemon.textes import centrer_requete
+from pokemon import traces
 
 app = FastAPI(title='Pokécollection', description='Catalogue et collection locale persistante, sans compte.')
 collection = CollectionDAO()
@@ -22,6 +23,49 @@ catalogue = CatalogueDAO()
 historique = HistoriqueDAO()
 recherche = RechercheDAO()
 IMAGES = Path(os.getenv('POKEMON_IMAGE_DIR', '/travail/pokemon/images'))
+
+
+def identite_console(request):
+    return traces.identite(request.headers.get('X-Poke-Session'), request.headers.get('X-Poke-Trace-Token'))
+
+
+@app.middleware('http')
+async def tracer_requete(request: Request, call_next):
+    cle = identite_console(request)
+    if request.url.path.startswith('/debug/') or request.headers.get('X-Poke-Debug') != '1' or not cle:
+        return await call_next(request)
+    trace, jeton, debut = traces.commencer(request.method, request.url.path,
+                                         dict(request.query_params))
+    statut = 500
+    try:
+        reponse = await call_next(request)
+        statut = reponse.status_code
+        reponse.headers['X-Request-ID'] = trace['requete_id']
+        return reponse
+    except Exception as erreur:
+        traces.evenement('HTTP', 'Erreur', erreur=type(erreur).__name__, message=str(erreur))
+        raise
+    finally:
+        traces.terminer(cle, trace, jeton, debut, statut)
+
+
+def autoriser_console(request):
+    cle = identite_console(request)
+    if not cle:
+        raise HTTPException(403, 'Session de console requise.')
+    return cle
+
+
+@app.get('/debug/traces', include_in_schema=False)
+def lire_console(request: Request, inclure_images: bool = False):
+    return JSONResponse({'requetes': traces.consulter(autoriser_console(request), inclure_images=inclure_images)},
+                        headers={'Cache-Control': 'no-store'})
+
+
+@app.delete('/debug/traces', include_in_schema=False)
+def effacer_console(request: Request):
+    traces.effacer(autoriser_console(request))
+    return JSONResponse({'efface': True}, headers={'Cache-Control': 'no-store'})
 
 @app.exception_handler(PyMongoError)
 async def mongo_indisponible(request, erreur):
@@ -91,6 +135,24 @@ def retirer_exemplaire(identifiant: str):
     if not collection.retirer(identifiant):
         raise HTTPException(404, 'Exemplaire introuvable.')
     return {'retire': True}
+
+
+class SelectionCartes(BaseModel):
+    references: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(min_length=1, max_length=200)
+
+
+class SuppressionExemplaires(BaseModel):
+    identifiants: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(min_length=1, max_length=10000)
+
+
+@app.post('/collection/selection')
+def selection_collection(selection: SelectionCartes):
+    return collection.selection_suppression(selection.references)
+
+
+@app.post('/collection/exemplaires/supprimer')
+def supprimer_exemplaires(suppression: SuppressionExemplaires):
+    return {'supprimes': collection.supprimer_exemplaires(suppression.identifiants)}
 
 @app.patch('/collection/exemplaires/{identifiant}')
 def modifier_exemplaire(identifiant: str, informations: InformationsExemplaire):

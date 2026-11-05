@@ -7,10 +7,22 @@ Application locale pour explorer le catalogue Pokémon français et constituer u
 - Catalogue illustré avec pagination et filtres par bloc, extension, nom, type et rareté.
 - Sélection de cartes et ajout à la collection en un clic, plusieurs exemplaires possibles.
 - Retrait d’un exemplaire et informations facultatives : état, variante, prix d’achat.
+- Suppression groupée dans « Ma collection » : cocher les cartes puis « Supprimer la sélection ». Tous leurs exemplaires sélectionnés sont retirés ; le catalogue et les embeddings sont conservés.
 - Recherche en langage naturel : jusqu’à cinq cartes possédées, retenues sous un seuil de distance cosinus calibré, sans compléter les résultats éloignés. [Méthode et limites](docs/RECHERCHE.md).
-- Dix dernières consultations par session anonyme, expiration après trente minutes d’inactivité.
+- Dix dernières cartes distinctes consultées par session anonyme, expiration après trente minutes d’inactivité. Revoir une carte la remet en tête.
 - Nombre d’exemplaires, cartes distinctes, achats renseignés et répartition par extension ou rareté.
 - Consultation de la collection possible même si Redis ou la recherche sémantique sont indisponibles.
+- Mode développeur : console des requêtes réelles HTTP, DAO, MongoDB, pgvector et Redis, isolée par session.
+
+## Console développeur
+
+Activer **Mode développeur** dans la barre latérale : la console apparaît sous la page courante, **requêtes les plus récentes en premier**. Les appels `/images/...` sont masqués par défaut ; une case permet de les afficher. Chaque requête conserve son identifiant HTTP, sa méthode, sa route, son statut et sa durée. Les événements d'une même opération sont rapprochés par un identifiant backend pour présenter ensemble la méthode DAO, la commande exécutée, les paramètres utiles, le résultat et la durée. Les opérations restent dans l'ordre d'exécution à l'intérieur de la requête.
+
+Les blocs des bases montrent notamment les écritures MongoDB d'ajout/retrait, le pipeline réel d'agrégation des statistiques et le writeConcern ; les SQL pgvector, références possédées, meilleur passage comparé par carte, distances, seuil et décisions accepté/rejeté ; les commandes Redis, la clé et le contenu effectivement lu de la liste avec longueur et TTL. Les détails HTTP, DAO et de l'encodage restent dépliables. **Actualiser les traces** et **Effacer la console** ne relancent pas les actions de la page et ne modifient aucune donnée métier.
+
+Les traces sont conservées uniquement en mémoire du backend : au plus 40 requêtes métier et 12 requêtes d'images, et 1 Mo par session, pendant 30 minutes sans requête tracée, pour 16 sessions récentes au maximum. Les images ne remplacent donc pas les requêtes métier dans la limite des quarante. Les événements et résultats volumineux sont explicitement abrégés. Un jeton aléatoire propre à la session, transmis en en-tête et jamais affiché, isole l'accès à la console. Les secrets sont masqués et les vecteurs limités à leur dimension et quatre valeurs. Redémarrer l'API efface ces traces.
+
+Le mode développeur observe les parcours existants sans modifier leurs résultats : il ajoute uniquement des lectures de diagnostic PostgreSQL pour les candidats et Redis pour `LRANGE`/`LLEN`/`TTL`. Après une consultation, ces lectures Redis s'effectuent dans la transaction existante, après les commandes métier, pour montrer le contenu observé à cet instant. Elles ne changent pas le délai d'expiration. Les lectures d'images passent alors réellement par l'API locale pour être traçables ; hors mode développeur, le cache Streamlit reste utilisé. Aucun accès à TCGdex n'est ajouté. Les durées HTTP indiquent le traitement jusqu'aux en-têtes de réponse, sans inclure le transfert des fichiers image. Les durées SQL incluent l'exécution et la récupération des lignes effectivement lues.
 
 ## Démarrer après clonage
 
@@ -80,7 +92,7 @@ flowchart LR
 |---|---|---|
 | MongoDB | Référence durable, filtres et statistiques calculées par agrégation | Mario |
 | PostgreSQL / pgvector | Index sémantique dérivé, recherche limitée aux cartes possédées | Swann |
-| Redis | Liste des consultations avec doublons, limite de dix et TTL renouvelé | Dorian |
+| Redis | Dix dernières cartes distinctes, remises en tête à chaque consultation, avec TTL renouvelé | Dorian |
 
 Les écritures MongoDB utilisent `writeConcern: majority`. Le modèle multilingue E5 est exécuté localement avec ONNX Runtime. Les images sont servies par l’API locale ; l’interface n’interroge jamais directement les bases.
 

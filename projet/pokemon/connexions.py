@@ -6,6 +6,7 @@ import redis
 from pgvector.psycopg import register_vector
 from pymongo import MongoClient
 from pymongo.write_concern import WriteConcern
+from .traces import CurseurTrace, EcouteMongo
 
 
 @lru_cache
@@ -13,6 +14,7 @@ def base_mongo():
     client = MongoClient(
         os.getenv('MONGO_URI', 'mongodb://mongo1,mongo2,mongo3/?replicaSet=rs0'),
         serverSelectionTimeoutMS=4000, connectTimeoutMS=3000,
+        event_listeners=[EcouteMongo()],
     )
     return client.get_database(os.getenv('POKEMON_DATABASE', 'pokemon'),
                                write_concern=WriteConcern(w='majority', wtimeout=5000))
@@ -29,6 +31,7 @@ def connexion_postgres(vector=True):
     connexion = psycopg.connect(
         os.getenv('POSTGRES_DSN', 'postgresql://nyc:nyc@postgres:5432/nyceats'),
         connect_timeout=3, autocommit=True, options='-c statement_timeout=10000',
+        cursor_factory=CurseurTrace,
     )
     if vector:
         try:

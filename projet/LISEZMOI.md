@@ -91,7 +91,7 @@ Le bilan distingue le lot importé du catalogue cumulé : cartes Pokémon par bl
 6. Montrer jusqu’à cinq cartes pertinentes et leurs distances cosinus (plus faible = texte plus proche ; ce n’est pas un score de confiance), puis une recherche sans résultat.
 7. Consulter plusieurs cartes puis ouvrir « Dernières consultations » pour montrer l’historique Redis.
 
-Chaque session Streamlit reçoit un UUID anonyme. Un nouveau chargement du navigateur peut créer une nouvelle session ; aucun historique durable ni compte n’est créé. Seuls les clics d’ouverture créent une consultation, pas les rechargements internes de Streamlit. La liste conserve les doublons et expire après 30 minutes sans nouvelle consultation ; une lecture de la liste ne prolonge pas le délai.
+Chaque session Streamlit reçoit un UUID anonyme. Un nouveau chargement du navigateur peut créer une nouvelle session ; aucun historique durable ni compte n’est créé. Seuls les clics d’ouverture créent une consultation, pas les rechargements internes de Streamlit. La liste conserve dix cartes distinctes : revoir une carte la remet en tête sans doublon et renouvelle l'expiration de trente minutes. Une lecture ne prolonge pas le délai. Les éventuels doublons des anciennes sessions sont masqués à la lecture.
 
 ## Recherche sémantique
 
@@ -119,7 +119,7 @@ MongoDB est la référence durable, en replica set ; les écritures utilisent `w
 
 PostgreSQL contient un index reconstruit lors de l’import. Son arrêt rend uniquement la recherche par sens indisponible. Redis conserve un historique non durable du point de vue métier : une panne retire cette fonction mais laisse fonctionner la collection et les fiches. On ne qualifie donc pas toute l’architecture d’AP du seul fait de ce mode dégradé.
 
-Redis utilise une transaction `LPUSH`, `LTRIM 0 9`, `EXPIRE 1800`. Les prix sont stockés et additionnés en centimes entiers pour éviter les imprécisions monétaires.
+Redis utilise une transaction `LREM 0 référence`, `LPUSH`, `LTRIM 0 9`, `EXPIRE 1800`. Les prix sont stockés et additionnés en centimes entiers pour éviter les imprécisions monétaires.
 
 ## Validation
 

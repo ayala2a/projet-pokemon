@@ -1,14 +1,17 @@
 """Mario : MongoDB ; Dorian : Redis ; Swann : index dérivé PostgreSQL."""
 import re
 from datetime import datetime, timezone
+from time import perf_counter
 
 from pymongo import UpdateOne
 
 from redis.exceptions import RedisError
 
 from .connexions import base_mongo, client_redis, connexion_postgres
+from .traces import active, evenement, executer_redis, lire_liste_redis, tracer_dao
 
 
+@tracer_dao
 class CollectionDAO:
     def __init__(self):
         self.base = base_mongo()
@@ -90,6 +93,17 @@ class CollectionDAO:
     def retirer(self, identifiant):
         return self.base.exemplaires.delete_one({'_id': identifiant}).deleted_count == 1
 
+    def selection_suppression(self, references):
+        exemplaires = list(self.base.exemplaires.find(
+            {'carte_ref': {'$in': list(set(references))}}, {'_id': 1, 'carte_ref': 1}).limit(10001))
+        return {'identifiants': [e['_id'] for e in exemplaires],
+                'cartes': len({e['carte_ref'] for e in exemplaires}),
+                'exemplaires': len(exemplaires)}
+
+    def supprimer_exemplaires(self, identifiants):
+        # Identifiants précis : les exemplaires ajoutés après la sélection sont conservés.
+        return self.base.exemplaires.delete_many({'_id': {'$in': list(set(identifiants))}}).deleted_count
+
     def modifier(self, identifiant, informations):
         return self.base.exemplaires.update_one({'_id': identifiant}, {'$set': informations}).matched_count == 1
 
@@ -122,6 +136,7 @@ class CollectionDAO:
                 'extensions': resultat['extensions'], 'raretes': resultat['raretes']}
 
 
+@tracer_dao
 class CatalogueDAO(CollectionDAO):
     def _source(self):
         return self.base.catalogue
@@ -152,6 +167,7 @@ class CatalogueDAO(CollectionDAO):
                 'blocs': sorted({e.get('bloc') or 'Non renseigné' for e in extensions})}
 
 
+@tracer_dao
 class HistoriqueDAO:
     def __init__(self, client=None, expiration=1800):
         self.redis = client if client is not None else client_redis()
@@ -159,24 +175,48 @@ class HistoriqueDAO:
 
     def enregistrer(self, session, reference):
         try:
-            # MULTI/EXEC : ajout, taille et expiration restent cohérents en concurrence.
+            # MULTI/EXEC : déplacer la carte en tête, limiter et renouveler le TTL atomiquement.
             with self.redis.pipeline(transaction=True) as pipe:
                 cle = 'pokemon:session:' + session + ':consultations'
+                pipe.lrem(cle, 0, reference)
                 pipe.lpush(cle, reference)
                 pipe.ltrim(cle, 0, 9)
                 pipe.expire(cle, self.expiration)
-                pipe.execute()
+                if active():
+                    pipe.llen(cle)
+                    pipe.ttl(cle)
+                    pipe.lrange(cle, 0, 9)
+                resultat = executer_redis(pipe, cle)
+                if active():
+                    evenement('Redis', 'État après consultation', cle=cle, longueur=resultat[-3],
+                              ttl_secondes=resultat[-2], contenu_liste=resultat[-1])
             return True
         except RedisError:
             return False
 
     def lire(self, session):
         try:
-            return self.redis.lrange('pokemon:session:' + session + ':consultations', 0, 9), True
-        except RedisError:
+            cle = 'pokemon:session:' + session + ':consultations'
+            references = lire_liste_redis(self.redis, cle)
+            if active():
+                # Observations en lecture seule : aucune prolongation de l'historique.
+                try:
+                    with self.redis.pipeline(transaction=False) as pipe:
+                        pipe.llen(cle)
+                        pipe.ttl(cle)
+                        longueur, ttl = executer_redis(pipe, cle)
+                    evenement('Redis', 'État de la liste', cle=cle, longueur=longueur, ttl_secondes=ttl)
+                except Exception as erreur:
+                    evenement('Redis', 'Diagnostic indisponible', cle=cle, erreur=type(erreur).__name__, message=str(erreur))
+            # Les sessions antérieures peuvent encore contenir des doublons.
+            # Préserver la consultation la plus récente, sans prolonger le TTL à la lecture.
+            return list(dict.fromkeys(references)), True
+        except RedisError as erreur:
+            evenement('Redis', 'Indisponible', erreur=type(erreur).__name__, message=str(erreur))
             return [], False
 
 
+@tracer_dao
 class RechercheDAO:
     def etat_index(self, references=None):
         with connexion_postgres() as connexion:
@@ -229,9 +269,11 @@ class RechercheDAO:
             return []
         from pokemon.pertinence import seuil_distance
         seuil = seuil_distance(modele)
+        evenement('pgvector', 'Paramètres de recherche', modele=modele, dimension=len(vecteur),
+                  vecteur=vecteur, seuil=seuil, references_possedees=references)
         with connexion_postgres() as connexion:
             # Filtre AVANT LIMIT : uniquement les références possédées actuellement.
-            lignes = connexion.execute('''
+            candidats_sql = '''
                 WITH candidats AS (
                     SELECT carte_ref, texte, embedding <=> %s AS distance
                     FROM pokemon_passages WHERE carte_ref=ANY(%s) AND modele=%s
@@ -243,7 +285,28 @@ class RechercheDAO:
                 ), meilleurs AS (
                     SELECT DISTINCT ON (carte_ref) carte_ref, texte, distance FROM candidats
                     ORDER BY carte_ref, distance
-                ) SELECT carte_ref, texte, distance FROM meilleurs
+                ) '''
+            parametres = (vecteur, references, modele, vecteur, references, modele)
+            lignes = connexion.execute(candidats_sql + '''SELECT carte_ref, texte, distance FROM meilleurs
                   WHERE distance <= %s ORDER BY distance, carte_ref LIMIT 5
-            ''', (vecteur, references, modele, vecteur, references, modele, seuil)).fetchall()
+            ''', (*parametres, seuil)).fetchall()
+            if active():
+                try:
+                    # Diagnostic réel en lecture seule ; ne remplace pas la sélection métier.
+                    diagnostic_debut = perf_counter()
+                    candidats = connexion.execute(candidats_sql + '''SELECT carte_ref, texte, distance
+                        FROM meilleurs ORDER BY distance, carte_ref''', parametres).fetchall()
+                    retenus = {ref for ref, _, _ in lignes}
+                    decisions = [{'carte_ref': ref, 'passage_compare': texte, 'distance': float(distance),
+                                  'accepte': ref in retenus,
+                                  'raison': 'retenu' if ref in retenus else
+                                  ('distance supérieure au seuil' if distance > seuil else 'limite de cinq résultats')}
+                                 for ref, texte, distance in candidats]
+                    evenement('pgvector', 'Candidats acceptés / rejetés', seuil=seuil,
+                              duree_ms=round((perf_counter() - diagnostic_debut) * 1000, 2),
+                              modele=modele, dimension=len(vecteur), references_possedees=references,
+                              diagnostic_lecture_seule=True, candidats=decisions,
+                              total=len(candidats), acceptes=len(retenus), rejetes=len(candidats)-len(retenus))
+                except Exception as erreur:
+                    evenement('pgvector', 'Diagnostic indisponible', erreur=type(erreur).__name__, message=str(erreur))
         return [{'carte_ref': ref, 'passage': texte, 'distance': float(distance)} for ref, texte, distance in lignes]

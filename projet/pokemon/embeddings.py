@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import Lock
 
 import numpy as np
+from .traces import evenement
 
 MODELE = 'Xenova/multilingual-e5-small'
 DOSSIER_MODELE = Path(os.getenv('POKEMON_MODEL_DIR', '/travail/pokemon/modele-e5'))
@@ -70,4 +71,8 @@ def encoder(textes, requete=False):
         for parties in representations:
             vecteur = np.mean(parties, axis=0)
             vecteurs.append((vecteur / max(np.linalg.norm(vecteur), 1e-12)).astype(np.float32))
-    return np.array(vecteurs)
+    resultat = np.array(vecteurs)
+    evenement('Embeddings', 'Encodage ONNX local', modele=charger()[2],
+              requete=requete, textes=textes, nombre=len(textes), dimension=resultat.shape[-1],
+              vecteurs=resultat)
+    return resultat

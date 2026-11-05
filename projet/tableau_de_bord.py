@@ -1,8 +1,10 @@
 """Interface Streamlit : utilise exclusivement l'API FastAPI."""
 import base64
 import html
+import json
 import math
 import os
+import secrets
 from uuid import uuid4
 from urllib.parse import quote
 
@@ -32,6 +34,8 @@ h3 {font-size:1.35rem;}
 .st-key-filtres {background:#fff;border:1px solid #e5e8f0;border-radius:18px;padding:16px 18px;margin:12px 0;}
 [class*="st-key-catalogue-carte-"] {position:relative;gap:4px;}
 [class*="st-key-catalogue-selection-"] {position:absolute;top:8px;right:8px;width:28px!important;z-index:2;}
+[class*="st-key-collection-carte-"] {position:relative;}
+[class*="st-key-collection-selection-"] {position:absolute;top:8px;right:8px;width:28px!important;z-index:2;}
 [class*="st-key-catalogue-carte-"] > * {flex-shrink:0;}
 [class*="st-key-catalogue-carte-"] > [data-testid="stElementContainer"]:last-child {margin-top:auto;}
 [data-testid="stImage"] img {border-radius:12px;}
@@ -61,13 +65,23 @@ h3 {font-size:1.35rem;}
 .catalogue-tags .pill {padding:1px 6px;margin:0 3px 2px 0;font-size:10px;line-height:16px;}
 .catalogue-quantite {height:16px;font-size:11px;line-height:16px;color:#536077;}
 [class*="st-key-catalogue-carte-"] .stButton button {min-height:34px;padding:4px 8px;}
+[class*="st-key-exemplaire-"] [data-baseweb="input"] {background:#f4f6fb;border:1px solid #e5e8f0;border-radius:10px;}
+[class*="st-key-exemplaire-"] [data-baseweb="input"] input {color:#20283e;}
+[class*="st-key-exemplaire-"] [data-testid="stExpander"] {border:0;background:transparent;}
 @media (max-width:640px) {.block-container {padding-top:1rem;} h1 {font-size:1.8rem;}}
 @media (prefers-reduced-motion:reduce) {* {transition:none!important;}}
 </style>''', unsafe_allow_html=True)
 
 
+def entetes_console():
+    return {'X-Poke-Session': st.session_state.session,
+            'X-Poke-Trace-Token': st.session_state.console_jeton,
+            'X-Poke-Debug': '1' if st.session_state.get('mode_developpeur') else '0'}
+
+
 def appeler(chemin, methode='GET', **kwargs):
-    reponse = requests.request(methode, API + chemin, timeout=90 if chemin == '/recherche' else 12, **kwargs)
+    reponse = requests.request(methode, API + chemin, headers=entetes_console(),
+                              timeout=90 if chemin == '/recherche' else 12, **kwargs)
     if not reponse.ok:
         try:
             message = reponse.json().get('detail', 'Une erreur est survenue.')
@@ -78,10 +92,155 @@ def appeler(chemin, methode='GET', **kwargs):
 
 
 @st.cache_data(ttl=3600, max_entries=1000, show_spinner=False)
-def illustration(identifiant, langue='fr'):
-    reponse = requests.get(API + '/images/' + quote(identifiant, safe=''), timeout=10)
+def illustration_cache(identifiant, langue='fr'):
+    # Un cache hit n'exécute aucun appel backend : aucune trace n'est inventée.
+    return charger_illustration(identifiant)
+
+
+def charger_illustration(identifiant):
+    reponse = requests.get(API + '/images/' + quote(identifiant, safe=''),
+                          headers=entetes_console(), timeout=10)
     reponse.raise_for_status()
     return reponse.content
+
+
+def illustration(identifiant, langue='fr'):
+    # La console montre les lectures d'images réelles, même si le cache d'une
+    # autre session est déjà chaud. Les fichiers restent servis localement.
+    if st.session_state.get('mode_developpeur'):
+        return charger_illustration(identifiant)
+    return illustration_cache(identifiant, langue)
+
+
+def operations_console(evenements):
+    """Rapprocher uniquement les événements portant le même identifiant backend."""
+    groupes = {}
+    for item in evenements:
+        details = item['details']
+        identifiant = details.get('operation_id') or details.get('appel_id')
+        cle = (item['source'], identifiant) if identifiant else ('evenement', item['ordre'])
+        if cle not in groupes:
+            groupes[cle] = {**item, 'details': {}}
+        groupes[cle]['details'].update(details)
+        if item.get('dao'):
+            groupes[cle]['dao'] = item['dao']
+    return list(groupes.values())
+
+
+def afficher_operation_console(item):
+    source, details = item['source'], item['details']
+    nom = item.get('dao') or details.get('methode_dao')
+    with st.container(border=True):
+        st.markdown(f"**{source} · {item['operation']}**")
+        duree = details.get('duree_ms')
+        st.caption(f"{item['heure'][11:23]} UTC" + (f' · {nom}' if nom else '') +
+                   (f' · {duree:.2f} ms' if duree is not None else ''))
+        if source == 'MongoDB':
+            commande = details.get('commande')
+            if commande is not None:
+                # Retirer les métadonnées de protocole, garder filtres, pipelines et écritures.
+                utile = {k: v for k, v in commande.items()
+                         if k not in {'$clusterTime', '$db', 'lsid', 'txnNumber'}}
+                st.code(json.dumps(utile, ensure_ascii=False, indent=2), language='json')
+            if 'writeConcern' in details:
+                st.json({'base': details.get('base'), 'writeConcern': details['writeConcern']}, expanded=True)
+            if 'resultat' in details:
+                st.markdown('**Résultat MongoDB**')
+                st.json(details['resultat'], expanded=True)
+        elif source == 'PostgreSQL':
+            if 'sql' in details:
+                st.code(details['sql'].strip(), language='sql')
+            if 'parametres' in details:
+                st.markdown('**Paramètres**')
+                st.json(details['parametres'], expanded=True)
+            if 'statut' in details:
+                st.caption(f"{details['statut']} · {details.get('lignes', '—')} ligne(s)")
+            if 'resultat' in details:
+                st.markdown('**Résultat PostgreSQL**')
+                st.json(details['resultat'], expanded=True)
+        elif source == 'pgvector':
+            st.json({k: v for k, v in details.items() if k != 'candidats'}, expanded=True)
+            if 'candidats' in details:
+                candidats = details['candidats']
+                lignes = candidats.get('extrait', []) if isinstance(candidats, dict) else candidats
+                if lignes:
+                    st.dataframe([{'Carte': c['carte_ref'], 'Passage comparé': c.get('passage_compare'),
+                                   'Distance': c['distance'], 'Seuil': details['seuil'],
+                                   'Décision': 'Accepté' if c['accepte'] else 'Rejeté',
+                                   'Motif': c['raison']} for c in lignes],
+                                 hide_index=True, width='stretch',
+                                 column_config={'Distance': st.column_config.NumberColumn(format='%.6f'),
+                                                'Seuil': st.column_config.NumberColumn(format='%.6f'),
+                                                'Passage comparé': st.column_config.TextColumn(width='large')})
+                else:
+                    st.caption('Aucun candidat observé.')
+                if isinstance(candidats, dict):
+                    st.caption(f"Extrait de {candidats['total']} candidats · {candidats['omis']} omis de l’affichage")
+        elif source == 'Redis':
+            if 'cle' in details:
+                st.code(details['cle'], language=None)
+            if 'commandes' in details:
+                st.markdown('**Commandes exécutées**')
+                st.json(details['commandes'], expanded=True)
+            if 'contenu_liste' in details:
+                st.markdown('**Contenu observé de la liste**')
+                st.json(details['contenu_liste'], expanded=True)
+            st.json({k: v for k, v in details.items() if k not in {'cle', 'commandes', 'contenu_liste'}}, expanded=True)
+        if 'erreur' in details:
+            st.json({k: details[k] for k in ('erreur', 'message') if k in details}, expanded=True)
+
+
+@st.fragment
+def console_developpeur():
+    st.divider()
+    st.subheader('Console développeur')
+    st.caption('Opérations réelles des bases · Cette session · Les plus récentes en premier')
+    try:
+        afficher_images = st.checkbox('Afficher les appels /images/…', key='console_images', value=False)
+        gauche, droite = st.columns([1, 1])
+        if gauche.button('Effacer la console', key='effacer_console'):
+            appeler('/debug/traces', 'DELETE')
+        droite.button('Actualiser les traces', key='actualiser_console')
+        requetes = appeler('/debug/traces', params={'inclure_images': afficher_images})['requetes']
+    except (requests.RequestException, RuntimeError) as erreur:
+        st.warning('Console indisponible : ' + str(erreur))
+        return
+    if not requetes:
+        st.info('La console est vide. Les prochaines actions apparaîtront ici.')
+        return
+    st.caption(f'{len(requetes)} requêtes · Conservation temporaire et bornée · Durées HTTP jusqu’aux en-têtes de réponse')
+    for requete in sorted(requetes, key=lambda r: r['debut'], reverse=True):
+        heure = requete['debut'][11:23]
+        titre = f"{heure} · {requete['methode']} {requete['route']} · {requete['statut']} · {requete['duree_ms']:.1f} ms"
+        with st.expander(titre):
+            st.caption('Identifiant de requête')
+            st.code(requete['requete_id'], language=None)
+            groupes = operations_console(requete['evenements'])
+            appels = [g for g in groupes if g['source'] == 'DAO']
+            if appels:
+                st.markdown('**Méthodes DAO appelées**')
+                for appel in appels:
+                    duree = appel['details'].get('duree_ms')
+                    st.caption(appel['operation'] + (f' · {duree:.2f} ms' if duree is not None else ''))
+            bases = [g for g in groupes if g['source'] in {'MongoDB', 'PostgreSQL', 'pgvector', 'Redis'}]
+            for item in bases:
+                if item['source'] == 'pgvector' and item['operation'] == 'Paramètres de recherche' and any(
+                        g['source'] == 'pgvector' and 'candidats' in g['details'] for g in bases):
+                    continue  # Modèle, références et seuil figurent aussi dans les décisions.
+                if item['source'] == 'Redis' and 'commandes' not in item['details'] and 'erreur' not in item['details']:
+                    continue  # État déjà présent dans le résultat réel du pipeline.
+                afficher_operation_console(item)
+            if not bases:
+                st.caption('Aucun appel aux bases observé pour cette requête.')
+            with st.expander('Détails HTTP et DAO'):
+                st.json({'methode': requete['methode'], 'route': requete['route'],
+                         'statut': requete['statut'], 'duree_ms': requete['duree_ms']}, expanded=True)
+                for item in groupes:
+                    if item['source'] in {'HTTP', 'DAO', 'Embeddings'}:
+                        st.caption(f"{item['source']} · {item['operation']}")
+                        st.json(item['details'], expanded=False)
+            if requete['evenements_omis']:
+                st.caption(f"{requete['evenements_omis']} événements omis : limite de mémoire atteinte.")
 
 
 def afficher_image(carte, afficher_langue=True):
@@ -115,11 +274,11 @@ def page_initiale(cle):
     st.session_state[cle] = 1
 
 
-def cocher(ref, cle):
+def cocher(ref, cle, ensemble='cartes_choisies'):
     if st.session_state[cle]:
-        st.session_state.cartes_choisies.add(ref)
+        st.session_state[ensemble].add(ref)
     else:
-        st.session_state.cartes_choisies.discard(ref)
+        st.session_state[ensemble].discard(ref)
 
 
 def ajouter(references):
@@ -140,6 +299,25 @@ def retirer(identifiant):
     try:
         appeler('/collection/exemplaires/' + identifiant, 'DELETE')
         st.session_state.message = 'Un exemplaire a été retiré.'
+        st.session_state.pop('resultats', None)
+    except (requests.RequestException, RuntimeError) as erreur:
+        st.session_state.erreur_action = str(erreur)
+
+
+def deselectionner_collection():
+    for reference in st.session_state.collection_choisies:
+        cle = 'suppression-' + reference
+        if cle in st.session_state:
+            st.session_state[cle] = False
+    st.session_state.collection_choisies.clear()
+
+
+def supprimer_selection(identifiants):
+    try:
+        resultat = appeler('/collection/exemplaires/supprimer', 'POST', json={'identifiants': identifiants})
+        nombre = resultat['supprimes']
+        st.session_state.message = f"{nombre} exemplaire{'s' if nombre != 1 else ''} supprimé{'s' if nombre != 1 else ''}."
+        deselectionner_collection()
         st.session_state.pop('resultats', None)
     except (requests.RequestException, RuntimeError) as erreur:
         st.session_state.erreur_action = str(erreur)
@@ -174,15 +352,16 @@ def grille(cartes, prefixe, distances=None, selectionnable=False, passages=None)
         for indice, carte in enumerate(cartes[debut:debut + 4], start=debut):
             with colonnes[indice % 4], st.container(
                     border=True, width='stretch', height=370 if selectionnable else 'content',
-                    key=f'catalogue-carte-{indice}' if selectionnable else None):
-                if selectionnable:
-                    cle = 'choix-' + carte['_id']
+                    key=f'{prefixe}-carte-{indice}' if selectionnable or prefixe == 'collection' else None):
+                if selectionnable or prefixe == 'collection':
+                    ensemble = 'cartes_choisies' if selectionnable else 'collection_choisies'
+                    cle = ('choix-' if selectionnable else 'suppression-') + carte['_id']
                     with st.container(horizontal=True, horizontal_alignment='right', gap=None,
-                                      key=f'catalogue-selection-{indice}'):
+                                      key=f'{prefixe}-selection-{indice}'):
                         st.checkbox('Sélectionner ' + carte['nom'],
-                                    value=carte['_id'] in st.session_state.cartes_choisies,
+                                    value=carte['_id'] in st.session_state[ensemble],
                                     key=cle, label_visibility='collapsed',
-                                    on_change=cocher, args=(carte['_id'], cle))
+                                    on_change=cocher, args=(carte['_id'], cle, ensemble))
                 if selectionnable:
                     apercu_catalogue(carte)
                 else:
@@ -259,6 +438,22 @@ def afficher_liste(est_catalogue):
                       width='stretch', on_click=ajouter, args=(choix,))
         if len(choix) > 200:
             st.warning('Ajoutez au maximum 200 cartes à la fois.')
+    else:
+        choix = sorted(st.session_state.collection_choisies)
+        selection = {'identifiants': [], 'cartes': 0, 'exemplaires': 0}
+        if choix and len(choix) <= 200:
+            selection = appeler('/collection/selection', 'POST', json={'references': choix})
+            resume.caption(f"{selection['cartes']} carte(s) sélectionnée(s) · {selection['exemplaires']} exemplaire(s)")
+        nombre = selection['exemplaires']
+        libelle = f"Supprimer {nombre} exemplaire{'s' if nombre != 1 else ''}" if nombre else 'Supprimer la sélection'
+        action.button(libelle, icon=':material/delete:', type='primary',
+                      width='stretch', disabled=not selection['identifiants'] or selection['exemplaires'] > 10000,
+                      on_click=supprimer_selection, args=(selection['identifiants'],))
+        if choix:
+            st.caption('Tous les exemplaires des cartes cochées seront retirés de la collection, y compris sur les autres pages.')
+            st.button('Désélectionner', on_click=deselectionner_collection)
+        if len(choix) > 200 or selection['exemplaires'] > 10000:
+            st.warning('Sélectionnez au maximum 200 cartes et 10 000 exemplaires à la fois.')
     if not resultat['cartes']:
         st.info('Aucune carte ne correspond à ces filtres.' if est_catalogue else
                 'Aucune carte ici. Ajoutez vos premières cartes depuis le catalogue.')
@@ -293,22 +488,39 @@ def afficher_fiche(afficher_langue=True):
         for attaque in carte.get('attaques', []):
             st.markdown('**' + attaque.get('name', 'Attaque') + '** — ' + str(attaque.get('damage', '')))
             st.write(attaque.get('effect', ''))
-        st.button('Ajouter un exemplaire', type='primary', on_click=ajouter, args=([carte['_id']],))
-        st.markdown(f"**Ma collection : {len(carte['exemplaires'])} exemplaire(s)**")
+        st.divider()
+        quantite = len(carte['exemplaires'])
+        compteur, ajout = st.columns([1, 1], vertical_alignment='center')
+        compteur.markdown(f"**{quantite} exemplaire{'s' if quantite != 1 else ''} dans ma collection**")
+        ajout.button('Ajouter un exemplaire', type='primary', width='stretch',
+                     on_click=ajouter, args=([carte['_id']],))
         for numero, e in enumerate(carte['exemplaires'], 1):
-            with st.expander(f"Exemplaire {numero}" + (' · ' + e['etat'] if e.get('etat') else '')):
-                with st.form('informations-' + e['_id']):
-                    etat = st.text_input('État (facultatif)', value=e.get('etat') or '', max_chars=40)
-                    variante = st.text_input('Variante (facultative)', value=e.get('variante') or '', max_chars=60)
-                    prix = st.number_input('Prix d’achat en € (facultatif)', min_value=0.0, max_value=99999999.99,
-                                           value=e['prix_centimes'] / 100 if e.get('prix_centimes') is not None else None,
-                                           step=0.01, format='%.2f')
-                    if st.form_submit_button('Enregistrer les informations'):
-                        appeler('/collection/exemplaires/' + e['_id'], 'PATCH',
-                                json={'etat': etat.strip() or None, 'variante': variante.strip() or None, 'prix_achat': prix})
-                        st.session_state.message = 'Informations enregistrées.'
-                        st.rerun()
-                st.button('Retirer cet exemplaire', key='retirer-' + e['_id'], on_click=retirer, args=(e['_id'],))
+            with st.container(border=True, key='exemplaire-' + e['_id']):
+                resume, suppression = st.columns([3, 1], vertical_alignment='center')
+                resume.markdown(f'**Exemplaire {numero}**')
+                details = [v for v in [e.get('etat'), e.get('variante')] if v]
+                if e.get('prix_centimes') is not None:
+                    details.append(f"{e['prix_centimes'] / 100:.2f} €".replace('.', ','))
+                if details:
+                    resume.caption(' · '.join(details))
+                suppression.button('Retirer', icon=':material/delete:', key='retirer-' + e['_id'],
+                                   help='Retirer uniquement cet exemplaire de la collection',
+                                   on_click=retirer, args=(e['_id'],), width='stretch')
+                with st.expander('Modifier les informations'):
+                    with st.form('informations-' + e['_id'], border=False):
+                        champs = st.columns([1, 1, 1])
+                        etat = champs[0].text_input('État', value=e.get('etat') or '',
+                                                   placeholder='Excellent…', max_chars=40)
+                        variante = champs[1].text_input('Variante', value=e.get('variante') or '',
+                                                       placeholder='Holo…', max_chars=60)
+                        prix = champs[2].number_input('Prix d’achat (€)', min_value=0.0, max_value=99999999.99,
+                                                      value=e['prix_centimes'] / 100 if e.get('prix_centimes') is not None else None,
+                                                      step=0.01, format='%.2f', placeholder='Non renseigné')
+                        if st.form_submit_button('Enregistrer', type='primary'):
+                            appeler('/collection/exemplaires/' + e['_id'], 'PATCH',
+                                    json={'etat': etat.strip() or None, 'variante': variante.strip() or None, 'prix_achat': prix})
+                            st.session_state.message = 'Informations enregistrées.'
+                            st.rerun()
         if not carte.get('texte'):
             st.caption('Recherche par sens indisponible pour cette carte.')
         if not st.session_state.historique_disponible:
@@ -316,7 +528,9 @@ def afficher_fiche(afficher_langue=True):
 
 
 for cle, valeur in {'session': str(uuid4()), 'selection': None, 'historique_disponible': True,
-                    'cartes_choisies': set(), 'page_catalogue': 1, 'page_collection': 1}.items():
+                    'cartes_choisies': set(), 'page_catalogue': 1, 'page_collection': 1,
+                    'collection_choisies': set(),
+                    'console_jeton': secrets.token_hex(32)}.items():
     if cle not in st.session_state:
         st.session_state[cle] = valeur
 
@@ -328,6 +542,7 @@ with st.sidebar:
     st.divider()
     st.caption('Votre collection, sans compte.')
     st.link_button('Données TCGdex ↗', 'https://tcgdex.dev/fr/')
+    st.toggle('Mode développeur', key='mode_developpeur')
 
 st.title('Détail de la carte' if st.session_state.selection else rubrique)
 if st.session_state.get('message'):
@@ -372,7 +587,7 @@ try:
             elif envoyer and len(phrase.strip()) >= 2:
                 st.info('Aucun résultat suffisamment pertinent dans votre collection')
     elif rubrique == 'Dernières consultations':
-        st.caption('Vos 10 dernières consultations · Effacées après 30 min d’inactivité')
+        st.caption('Vos 10 dernières cartes consultées · Effacées après 30 min d’inactivité')
         resultat = appeler(f'/sessions/{st.session_state.session}/consultations')
         if not resultat['disponible']:
             st.info('L’historique est momentanément indisponible. Le catalogue et la collection restent accessibles.')
@@ -399,3 +614,6 @@ try:
 except (requests.RequestException, RuntimeError) as erreur:
     st.error('Le service est momentanément indisponible. ' + str(erreur))
     st.button('Réessayer')
+
+if st.session_state.get('mode_developpeur'):
+    console_developpeur()
