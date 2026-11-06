@@ -70,13 +70,27 @@ try:
     at.text_input[0].set_value('Un Pokémon qui provoque des incendies')
     bouton(at, 'Trouver mes cartes').click().run()
     verifier(at)
-    assert 1 <= len(at.session_state['resultats']) <= 5
+    assert len(at.session_state['resultats']) >= 1
+    maximum = len(at.session_state['resultats'])
+    if maximum > 1:
+        curseur = next(s for s in at.slider if s.key == 'top_k_recherche')
+        assert curseur.max == maximum
+        curseur.set_value(1).run()
+        verifier(at)
+        assert len([b for b in at.button if (b.key or '').startswith('semantique-')]) == 1
+        next(s for s in at.slider if s.key == 'top_k_recherche').set_value(min(10, maximum)).run()
+        verifier(at)
     assert any(x['carte']['nom'] == 'Dracaufeu' for x in at.session_state['resultats'])
     at.text_input[0].set_value('comment préparer des pâtes carbonara')
     bouton(at, 'Trouver mes cartes').click().run()
     verifier(at)
-    assert at.session_state['resultats'] == []
-    assert any(i.value == 'Aucun résultat suffisamment pertinent dans votre collection' for i in at.info)
+    resultats = at.session_state['resultats']
+    if resultats:
+        assert all(r['similarite'] >= max(.841, .95 * resultats[0]['similarite']) for r in resultats)
+        assert [r['similarite'] for r in resultats] == sorted(
+            (r['similarite'] for r in resultats), reverse=True)
+    else:
+        assert any(i.value == 'Aucun résultat suffisamment pertinent dans votre collection' for i in at.info)
     at.radio[0].set_value('Dernières consultations').run()
     verifier(at)
     assert any(avant['nom'] in m.value for m in at.markdown)

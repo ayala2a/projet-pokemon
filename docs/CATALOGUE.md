@@ -43,6 +43,6 @@ Le bilan détaillé, avec la liste des références sans illustration et les com
 
 ## Source et fonctionnement local
 
-Les identifiants ont été vérifiés auprès de l’[API française TCGdex](https://api.tcgdex.net/v2/fr/series), puis dans les détails des séries `base`, `ex`, `dp`, `pl` et `hgss`. Les fiches, les images disponibles et le modèle sont téléchargés avant utilisation. La pagination, les filtres et les fiches interrogent uniquement FastAPI et les bases locales. La recherche n’interroge que les références possédées avant de trier les distances et de retenir cinq résultats.
+Les identifiants ont été vérifiés auprès de l’[API française TCGdex](https://api.tcgdex.net/v2/fr/series), puis dans les détails des séries `base`, `ex`, `dp`, `pl` et `hgss`. Les fiches, les images disponibles et le modèle sont téléchargés avant utilisation. La pagination, les filtres et les fiches interrogent uniquement FastAPI et les bases locales. La recherche n’interroge que les références possédées et classe les résultats par similarité décroissante, avec un minimum de 95 % du meilleur score et un plancher de 0,841. Le curseur Top K choisit combien en afficher, jusqu'au nombre total de cartes admissibles.
 
 Les scans anglais complémentaires sont référencés dans le [jeu de données Pokémon TCG API](https://github.com/PokemonTCG/pokemon-tcg-data), avec vérification du numéro, du Pokédex et des PV avant téléchargement. La recherche utilise maintenant des passages distincts et affiche l’effet ou la description correspondant au résultat.

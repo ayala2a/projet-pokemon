@@ -165,12 +165,14 @@ def afficher_operation_console(item):
                 lignes = candidats.get('extrait', []) if isinstance(candidats, dict) else candidats
                 if lignes:
                     st.dataframe([{'Carte': c['carte_ref'], 'Passage comparé': c.get('passage_compare'),
-                                   'Distance': c['distance'], 'Seuil': details['seuil'],
+                                   'Distance': c['distance'], 'Similarité': c['similarite'],
+                                   'Seuil de similarité': details['seuil_similarite'],
                                    'Décision': 'Accepté' if c['accepte'] else 'Rejeté',
                                    'Motif': c['raison']} for c in lignes],
                                  hide_index=True, width='stretch',
                                  column_config={'Distance': st.column_config.NumberColumn(format='%.6f'),
-                                                'Seuil': st.column_config.NumberColumn(format='%.6f'),
+                                                'Similarité': st.column_config.NumberColumn(format='%.6f'),
+                                                'Seuil de similarité': st.column_config.NumberColumn(format='%.6f'),
                                                 'Passage comparé': st.column_config.TextColumn(width='large')})
                 else:
                     st.caption('Aucun candidat observé.')
@@ -370,7 +372,7 @@ def grille(cartes, prefixe, distances=None, selectionnable=False, passages=None)
                     st.markdown('<div class="card-meta">' + html.escape(carte['extension']) + ' · N° ' + html.escape(carte['numero']) + '</div>', unsafe_allow_html=True)
                     st.markdown(''.join('<span class="pill">' + html.escape(x) + '</span>' for x in [*carte['types'], carte['rarete']]), unsafe_allow_html=True)
                 if distances is not None:
-                    st.caption(f"Distance cosinus : {distances[indice]:.3f}")
+                    st.caption(f"N° {indice + 1} · Similarité cosinus : {1 - distances[indice]:.3f}")
                 if passages and passages[indice]:
                     st.write(passages[indice])
                 if carte.get('quantite') and not selectionnable:
@@ -563,6 +565,7 @@ try:
         afficher_liste(rubrique == 'Catalogue')
     elif rubrique == 'Recherche par sens':
         st.caption('Trouvez une carte de votre collection à partir de ses effets ou de sa description.')
+        st.caption('Choisissez le top K parmi les cartes dont la similarité atteint au moins 95 % du meilleur score et 0,841. Les résultats sont classés du plus proche au moins proche ; ce score n’est pas une probabilité.')
         if not stats['exemplaires']:
             st.info('Ajoutez des cartes depuis le catalogue pour rechercher dans votre collection.')
         else:
@@ -575,15 +578,28 @@ try:
                 else:
                     with st.spinner('À la recherche des cartes les plus proches…'):
                         try:
-                            st.session_state.resultats = appeler('/recherche', 'POST', json={'texte': phrase})['resultats']
+                            st.session_state.resultats = appeler('/recherche', 'POST',
+                                                                json={'texte': phrase, 'top_k': None})['resultats']
                         except (requests.RequestException, RuntimeError) as erreur:
                             st.session_state.resultats = []
                             st.warning(str(erreur))
             if st.session_state.get('resultats'):
-                st.caption(f"{len(st.session_state.resultats)} résultat(s)")
-                grille([x['carte'] for x in st.session_state.resultats], 'semantique',
-                       [x['distance'] for x in st.session_state.resultats],
-                       passages=[x.get('passage', '') for x in st.session_state.resultats])
+                maximum = len(st.session_state.resultats)
+                st.session_state.top_k_recherche = min(maximum, max(1, st.session_state.get('top_k_recherche', 10)))
+                if maximum > 1:
+                    top_k = st.slider('Top K — nombre de résultats', min_value=1, max_value=maximum,
+                                      step=1, key='top_k_recherche',
+                                      help='Le maximum correspond à toutes les cartes qui passent le seuil dynamique. Changer K ne relance pas la recherche.')
+                else:
+                    top_k = 1
+                    st.caption('Top K : 1 — une seule carte passe le seuil dynamique.')
+                resultats_affiches = st.session_state.resultats[:top_k]
+                seuil = st.session_state.resultats[0].get('seuil_similarite')
+                st.caption(f"{top_k} résultat(s) affiché(s) sur {maximum} admissible(s)" +
+                           (f" · Seuil dynamique de similarité : {seuil:.3f}" if seuil is not None else ''))
+                grille([x['carte'] for x in resultats_affiches], 'semantique',
+                       [x['distance'] for x in resultats_affiches],
+                       passages=[x.get('passage', '') for x in resultats_affiches])
             elif envoyer and len(phrase.strip()) >= 2:
                 st.info('Aucun résultat suffisamment pertinent dans votre collection')
     elif rubrique == 'Dernières consultations':

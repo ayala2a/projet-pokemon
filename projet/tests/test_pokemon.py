@@ -94,6 +94,7 @@ class IntegrationTest(unittest.TestCase):
         self.assertEqual(self.client.get('/cartes/fr:inconnue').status_code, 404)
         self.assertEqual(self.client.get('/sessions/pas-un-uuid/consultations').status_code, 422)
         self.assertEqual(self.client.post('/recherche', json={'texte': '  '}).status_code, 422)
+        self.assertEqual(self.client.post('/recherche', json={'texte': 'incendies', 'top_k': 0}).status_code, 422)
         a = self.client.get('/collection?page=1').json()['cartes']
         b = self.client.get('/collection?page=2').json()['cartes']
         self.assertFalse({c['_id'] for c in a} & {c['_id'] for c in b})
@@ -144,10 +145,17 @@ class IntegrationTest(unittest.TestCase):
         reponse = self.client.post('/recherche', json={'texte': 'Un Pokémon qui provoque des incendies'})
         self.assertEqual(reponse.status_code, 200, reponse.text)
         resultats = reponse.json()['resultats']
-        self.assertTrue(1 <= len(resultats) <= 5)
+        self.assertTrue(1 <= len(resultats) <= 10)
         self.assertIn('fr:base1-4', [x['carte_ref'] for x in resultats])
         distances = [x['distance'] for x in resultats]
         self.assertEqual(distances, sorted(distances))
+        self.assertTrue(all(x['similarite'] >= max(.841, .95 * resultats[0]['similarite']) for x in resultats))
+        tous = self.client.post('/recherche', json={'texte': 'Un Pokémon qui provoque des incendies',
+                                                   'top_k': None}).json()['resultats']
+        un = self.client.post('/recherche', json={'texte': 'Un Pokémon qui provoque des incendies',
+                                                 'top_k': 1}).json()['resultats']
+        self.assertEqual(resultats, tous[:10])
+        self.assertEqual(un, tous[:1])
         references = set(self.api.collection.references())
         self.assertTrue(all(x['carte_ref'] in references and x['carte']['texte'] for x in resultats))
         from pokemon.embeddings import encoder, identite_modele

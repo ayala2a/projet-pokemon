@@ -1,4 +1,4 @@
-"""Seuil issu de calibrer_recherche.py, lié à une révision du modèle."""
+"""Ancien seuil calibré, conservé pour référence ; inutilisé par la recherche active."""
 import json
 from functools import lru_cache
 from pathlib import Path

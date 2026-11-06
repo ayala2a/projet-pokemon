@@ -187,10 +187,10 @@ def dernieres_consultations(session: UUID):
 
 class Requete(BaseModel):
     texte: str = Field(min_length=2, max_length=500)
+    top_k: int | None = Field(default=10, ge=1)
 
 @app.post('/recherche')
 def recherche_semantique(requete: Requete):
-    from pokemon.pertinence import CalibrationAbsente
     texte = requete.texte.strip()
     if len(texte) < 2:
         raise HTTPException(422, 'Saisissez une phrase de recherche.')
@@ -199,8 +199,8 @@ def recherche_semantique(requete: Requete):
         if not references:
             return {'resultats': []}
         vecteur = encoder([centrer_requete(texte)], requete=True)[0]
-        resultats = recherche.rechercher(vecteur, references, identite_modele())
-    except (psycopg.Error, ModeleAbsent, CalibrationAbsente, OSError, ImportError) as erreur:
+        resultats = recherche.rechercher(vecteur, references, identite_modele(), limite=requete.top_k)
+    except (psycopg.Error, ModeleAbsent, OSError, ImportError) as erreur:
         logging.warning('Recherche indisponible : %s', erreur)
         raise HTTPException(503, 'La recherche par sens est indisponible. Les filtres restent utilisables.') from erreur
     fiches = collection.fiches(x['carte_ref'] for x in resultats)

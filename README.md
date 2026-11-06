@@ -10,7 +10,7 @@ Dépôt du projet : [ayala2a/projet-pokemon](https://github.com/ayala2a/projet-p
 - Sélection de cartes et ajout à la collection en un clic, plusieurs exemplaires possibles.
 - Retrait d’un exemplaire et informations facultatives : état, variante, prix d’achat.
 - Suppression groupée dans « Ma collection » : cocher les cartes puis « Supprimer la sélection ». Tous leurs exemplaires sélectionnés sont retirés ; le catalogue et les embeddings sont conservés.
-- Recherche en langage naturel : jusqu’à cinq cartes possédées, retenues sous un seuil de distance cosinus calibré, sans compléter les résultats éloignés. [Méthode et limites](docs/RECHERCHE.md).
+- Recherche en langage naturel : cartes possédées triées par similarité cosinus décroissante, avec un seuil égal au maximum entre 95 % du meilleur score et 0,841. Un curseur choisit le top K, de 1 au nombre total de cartes admissibles (10 par défaut si possible). [Méthode et limites](docs/RECHERCHE.md).
 - Dix dernières cartes distinctes consultées par session anonyme, expiration après trente minutes d’inactivité. Revoir une carte la remet en tête.
 - Nombre d’exemplaires, cartes distinctes, achats renseignés et répartition par extension ou rareté.
 - Consultation de la collection possible même si Redis ou la recherche sémantique sont indisponibles.
@@ -97,6 +97,8 @@ flowchart LR
 | Redis | Dix dernières cartes distinctes, remises en tête à chaque consultation, avec TTL renouvelé | Dorian |
 
 Les écritures MongoDB utilisent `writeConcern: majority`. Le modèle multilingue E5 est exécuté localement avec ONNX Runtime. Les images sont servies par l’API locale ; l’interface n’interroge jamais directement les bases.
+
+Nous choisissons un positionnement **CP pour la collection persistante** : en cas de partition réseau du replica set MongoDB, une modification n’est confirmée que si une majorité des trois nœuds l’acquitte. Nous privilégions ainsi la cohérence des écritures de collection à leur disponibilité sur un nœud isolé. Redis et pgvector sont des fonctions facultatives : leur panne retire l’historique ou la recherche par sens, tandis que la collection reste utilisable si MongoDB est accessible. Ce choix ne garantit pas une cohérence forte entre les trois bases. Le [détail du choix CAP et de ses limites](projet/LISEZMOI.md#disponibilité-et-cap) fournit une formulation pour la soutenance.
 
 ## Commandes utiles
 

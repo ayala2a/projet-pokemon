@@ -9,7 +9,7 @@ from pokemon.dao import CollectionDAO
 
 @unittest.skipUnless(os.getenv('POKEMON_INTEGRATION') == '1', 'Passages du catalogue préparés requis')
 class PertinenceTest(unittest.TestCase):
-    def test_seuil_rejette_les_formulations_trop_eloignees(self):
+    def test_seuil_relatif_sur_les_cartes_possedees(self):
         import api
         source = api.collection.base
         nom = 'pokemon_test_' + uuid4().hex
@@ -27,11 +27,18 @@ class PertinenceTest(unittest.TestCase):
                     ('sentir le danger grâce à la télépathie', 'fr:base1-43'),
                 ]:
                     resultat = client.post('/recherche', json={'texte': question}).json()['resultats']
-                    self.assertEqual([x['carte_ref'] for x in resultat], [reference])
+                    self.assertEqual(resultat[0]['carte_ref'], reference)
+                    self.assertTrue(all(x['similarite'] >= max(.841, .95 * resultat[0]['similarite']) for x in resultat))
                 for question in ['comment préparer des pâtes carbonara',
                                  'restaurer les points de vie de mes alliés',
                                  'mes cartes permettant de piocher']:
-                    self.assertEqual(client.post('/recherche', json={'texte': question}).json()['resultats'], [])
+                    # Chaque résultat éventuel doit satisfaire les deux seuils.
+                    reponse = client.post('/recherche', json={'texte': question})
+                    self.assertEqual(reponse.status_code, 200)
+                    resultats = reponse.json()['resultats']
+                    self.assertLessEqual(len(resultats), 2)
+                    if resultats:
+                        self.assertTrue(all(x['similarite'] >= max(.841, .95 * resultats[0]['similarite']) for x in resultats))
         finally:
             source.client.drop_database(nom)
 

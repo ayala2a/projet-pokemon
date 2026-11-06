@@ -264,13 +264,12 @@ class RechercheDAO:
                         ON CONFLICT (carte_ref) DO UPDATE SET texte=EXCLUDED.texte,
                         modele=EXCLUDED.modele, embedding=EXCLUDED.embedding''', lignes)
 
-    def rechercher(self, vecteur, references, modele):
+    def rechercher(self, vecteur, references, modele, limite=10):
         if not references:
             return []
-        from pokemon.pertinence import seuil_distance
-        seuil = seuil_distance(modele)
         evenement('pgvector', 'Paramètres de recherche', modele=modele, dimension=len(vecteur),
-                  vecteur=vecteur, seuil=seuil, references_possedees=references)
+                  vecteur=vecteur, ratio_similarite=0.95, seuil_absolu=0.841,
+                  limite=limite, references_possedees=references)
         with connexion_postgres() as connexion:
             # Filtre AVANT LIMIT : uniquement les références possédées actuellement.
             candidats_sql = '''
@@ -284,29 +283,43 @@ class RechercheDAO:
                                     WHERE p.carte_ref=s.carte_ref AND p.modele=s.modele)
                 ), meilleurs AS (
                     SELECT DISTINCT ON (carte_ref) carte_ref, texte, distance FROM candidats
-                    ORDER BY carte_ref, distance
+                    ORDER BY carte_ref, distance, texte
+                ), scores AS (
+                    SELECT carte_ref, texte, distance, 1 - distance AS similarite,
+                           greatest(0.841, 0.95 * max(1 - distance) OVER ()) AS seuil_similarite
+                    FROM meilleurs
                 ) '''
             parametres = (vecteur, references, modele, vecteur, references, modele)
-            lignes = connexion.execute(candidats_sql + '''SELECT carte_ref, texte, distance FROM meilleurs
-                  WHERE distance <= %s ORDER BY distance, carte_ref LIMIT 5
-            ''', (*parametres, seuil)).fetchall()
+            lignes = connexion.execute(candidats_sql + '''
+                  SELECT carte_ref, texte, distance, similarite, seuil_similarite FROM scores
+                  WHERE similarite > 0 AND similarite >= seuil_similarite
+                  ORDER BY distance, carte_ref LIMIT %s
+            ''', (*parametres, limite)).fetchall()
             if active():
                 try:
                     # Diagnostic réel en lecture seule ; ne remplace pas la sélection métier.
                     diagnostic_debut = perf_counter()
-                    candidats = connexion.execute(candidats_sql + '''SELECT carte_ref, texte, distance
-                        FROM meilleurs ORDER BY distance, carte_ref''', parametres).fetchall()
-                    retenus = {ref for ref, _, _ in lignes}
+                    candidats = connexion.execute(candidats_sql + '''
+                        SELECT carte_ref, texte, distance, similarite, seuil_similarite
+                        FROM scores ORDER BY distance, carte_ref''', parametres).fetchall()
+                    retenus = {ligne[0] for ligne in lignes}
                     decisions = [{'carte_ref': ref, 'passage_compare': texte, 'distance': float(distance),
+                                  'similarite': float(similarite),
                                   'accepte': ref in retenus,
                                   'raison': 'retenu' if ref in retenus else
-                                  ('distance supérieure au seuil' if distance > seuil else 'limite de cinq résultats')}
-                                 for ref, texte, distance in candidats]
-                    evenement('pgvector', 'Candidats acceptés / rejetés', seuil=seuil,
+                                  ('similarité non positive' if similarite <= 0 else
+                                   'similarité inférieure au seuil absolu de 0,841' if similarite < 0.841 else
+                                   'similarité inférieure à 95 % du meilleur score' if similarite < seuil
+                                   else f'limite de {limite} résultats')}
+                                 for ref, texte, distance, similarite, seuil in candidats]
+                    evenement('pgvector', 'Candidats acceptés / rejetés',
+                              seuil_similarite=float(candidats[0][4]) if candidats else None,
                               duree_ms=round((perf_counter() - diagnostic_debut) * 1000, 2),
                               modele=modele, dimension=len(vecteur), references_possedees=references,
                               diagnostic_lecture_seule=True, candidats=decisions,
                               total=len(candidats), acceptes=len(retenus), rejetes=len(candidats)-len(retenus))
                 except Exception as erreur:
                     evenement('pgvector', 'Diagnostic indisponible', erreur=type(erreur).__name__, message=str(erreur))
-        return [{'carte_ref': ref, 'passage': texte, 'distance': float(distance)} for ref, texte, distance in lignes]
+        return [{'carte_ref': ref, 'passage': texte, 'distance': float(distance),
+                 'similarite': float(similarite), 'seuil_similarite': float(seuil)}
+                for ref, texte, distance, similarite, seuil in lignes]
